@@ -1,0 +1,17 @@
+DebFind is an application for finding Debian packages.
+
+For most searches, entering words in the Name and Description field and clicking Find should be sufficient.
+
+When DebFind is started on any given day it creates indexes of all the packages known to the system. This can take several seconds. These indexes are cached, so subsequent uses on the same day will reuse the cache and DebFind will start up much quicker. If you update the packages you can force DebFind to re-read and re-index them by clicking the Refresh button.
+
+It is also possible to search just amongst the package names by using the Name Only field.
+
+Note that the words entered in the Name and Description and Name Only fields are stemmed using the Porter stemming algorithm (and the indexes use stemmed words to match). By default only packages matching all the specified words are found, but by clicking Any Words this behavior can be changed.
+
+Searches can be restriced by specifying a Section, or by specifying words in both the Name and Description and Name Only fields, or by specifying all three.
+
+By default libraries are ignored: check the Include Libraries checkbox to include them in searches.
+
+Once you've entered your search criteria, click Find to show any matching packages in the left-hand pane. If you click a package, its details will be shown in the right-hand pane. The size of these panes can be adjusted by clicking and dragging the line between them.
+
+In addition to supporting Alt-key accelerators (e.g., Alt+F for Find), F3 will also work for Find and F1 for Help.

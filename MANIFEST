@@ -1,0 +1,12 @@
+# (2) TODO GUI
+
+DebFind.pyw
+Window.py
+
+Model.py # (1) TODO load/save cache + tests
+
+README.md
+
+st.sh
+
+# vim: syn=yaml
