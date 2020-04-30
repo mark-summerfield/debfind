@@ -3,7 +3,10 @@
 DebFind.pyw
 Window.py
 
-Model.py # (1) TODO load/save cache + tests
+Model.py # (1) TODO load/save cache
+	 # (2) tests
+	 # (3) try .gz and/or memory map of cache to see if either/both
+	 #     is faster
 
 README.md
 
