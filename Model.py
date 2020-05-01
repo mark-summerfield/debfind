@@ -281,7 +281,7 @@ class Model:
             self._namesForStemmedName = namesForStemmedName
             self._namesForSection = namesForSection
             onReady(f'Read {len(self._debForName):,d} packages and indexes '
-                    f' in {time.monotonic() - self.timer:0.1f}sec.', True)
+                    f'in {time.monotonic() - self.timer:0.1f}sec.', True)
             return True
         except (KeyError, pickle.PickleError, OSError) as err:
             print(f'Failed to write cache: {err}')
