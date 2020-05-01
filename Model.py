@@ -6,8 +6,8 @@ import concurrent.futures
 import contextlib
 import datetime
 import glob
+import json
 import os
-import pickle
 import tempfile
 import time
 
@@ -274,8 +274,8 @@ class Model:
         if not os.path.exists(filename):
             return False
         try:
-            with open(filename, 'rb') as file:
-                data = pickle.load(file)
+            with open(filename, 'rt', encoding='utf-8') as file:
+                data = json.load(file, object_hook=unjson)
             debForName = data['debs']
             namesForStemmedDescription = data['descs']
             namesForStemmedName = data['names']
@@ -287,7 +287,7 @@ class Model:
             onReady(f'Read {len(self._debForName):,d} packages and indexes '
                     f'in {time.monotonic() - self.timer:0.1f}sec.', True)
             return True
-        except (KeyError, pickle.PickleError, OSError) as err:
+        except (KeyError, json.JSONDecodeError, OSError) as err:
             print(f'Failed to write cache: {err}')
             self._deleteCache()
         return False
@@ -299,9 +299,10 @@ class Model:
                     names=self._namesForStemmedName,
                     sects=self._namesForSection)
         try:
-            with open(self._cacheFilename(), 'wb') as file:
-                pickle.dump(data, file, protocol=4)
-        except (pickle.PickleError, OSError) as err:
+            with open(self._cacheFilename(), 'wt',
+                      encoding='utf-8') as file:
+                json.dump(data, file, default=jsonize)
+        except (TypeError, OSError) as err:
             print(f'Failed to write cache: {err}')
             self._deleteCache()
 
@@ -345,3 +346,17 @@ _COMMON_STEMS = {
     'document', 'file', 'for', 'gnu', 'in', 'kernel', 'librari', 'linux',
     'modul', 'of', 'on', 'packag', 'runtim', 'support', 'the', 'to',
     'tool', 'version', 'with'}
+
+
+def jsonize(item):
+    if isinstance(item, set):
+        return {'__py$set__': list(item)}
+    raise TypeError(f'cannot jsonize {type(item)}')
+
+
+def unjson(d):
+    value = d.get('__py$set__')
+    if value is not None:
+        return set(value)
+    return d
+
