@@ -5,7 +5,6 @@ import collections
 import concurrent.futures
 import contextlib
 import datetime
-import enum
 import glob
 import os
 import pickle
@@ -23,6 +22,7 @@ PACKAGE_PATTERN = '*Packages'
 
 Deb = collections.namedtuple('Deb', ('name', 'ver', 'section',
                                      'description', 'url', 'size'))
+
 
 class _Deb:
 
@@ -189,7 +189,7 @@ class Model:
         noLibNames = set()
         for name in names:
             if (('libre' in name or not name.startswith('lib')) and
-                    not '-lib' in name):
+                    '-lib' not in name):
                 noLibNames.add(name)
         return noLibNames
 
@@ -327,9 +327,9 @@ def _stemmedWords(line):
     nonLetterRx = re.compile(r'\P{L}+')
     stemmer = snowballstemmer.stemmer('english')
     return [word for word in stemmer.stemWords(
-                     nonLetterRx.sub(' ', line).casefold().split())
+            nonLetterRx.sub(' ', line).casefold().split())
             if len(word) > 1 and not word.isdigit() and
-               not word.startswith('lib') and not word in _COMMON_STEMS]
+                not word.startswith('lib') and word not in _COMMON_STEMS]
 
 
 _COMMON_STEMS = {
@@ -344,8 +344,6 @@ def _genericSection(section):
 
 
 if __name__ == '__main__':
-    import sys
-
 
     def onReady(message, done):
         print(message)
@@ -380,7 +378,7 @@ if __name__ == '__main__':
                f'wrong length ({len(names)})'
         if mustInclude is not None:
             assert (names & mustInclude) == mustInclude, \
-                   'wrong/missing name(s)'
+                'wrong/missing name(s)'
         print(f'{len(names):,d} OK')
 
     print('Model tests')
@@ -393,7 +391,7 @@ if __name__ == '__main__':
     query.descriptionWords = "haskell numbers"
     query.includeLibraries = True
     names = model.query(query) # All
-    check(1, query, names, {'libghc-random-dev'}, 2);
+    check(1, query, names, {'libghc-random-dev'}, 2)
 
     query.clear()
     query.descriptionWords = 'haskell numbers'
@@ -453,13 +451,13 @@ if __name__ == '__main__':
     query.clear()
     query.nameWords = 'python3 django memoize'
     names = model.query(query) # All
-    check(9, query, names, {'python3-django-memoize'}, 1, 5);
+    check(9, query, names, {'python3-django-memoize'}, 1, 5)
     n = len(names)
 
     query.clear()
     query.nameWords = 'python django memoize'
     names = model.query(query) # All
-    check(10, query, names, {'python3-django-memoize'}, n, n);
+    check(10, query, names, {'python3-django-memoize'}, n, n)
 
     query.clear()
     query.nameWords = 'python django memoize'
@@ -474,7 +472,7 @@ if __name__ == '__main__':
     query.clear()
     query.section = 'vcs'
     names = model.query(query)
-    check(12, query, names, {'git'}, 2);
+    check(12, query, names, {'git'}, 2)
 
     query.clear()
     query.section = 'math'
