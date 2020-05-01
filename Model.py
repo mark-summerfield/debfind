@@ -166,9 +166,13 @@ class Model:
             nameWords = _stemmedWords(name)
             for word in nameWords:
                 self.namesForStemmedName.setdefault(word, set()).add(name)
+                if word == 'python3':
+                    self.namesForStemmedName[word].add('python')
             for word in _stemmedWords(deb.description) + nameWords:
                 self.namesForStemmedDescription.setdefault(word,
                                                            set()).add(name)
+                if word == 'python3':
+                    self.namesForStemmedDescription[word].add('python')
             self.namesForSection.setdefault(deb.section, set()).add(name)
         onReady(f'Read and indexed {len(self.debForName):,d} packages in '
                 f'{time.monotonic() - self.timer:0.1f}sec.', True)

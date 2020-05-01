@@ -1,12 +1,12 @@
-# (2) TODO GUI
+# (4) TODO GUI
 
 DebFind.pyw
 Window.py
 
-Model.py # (1) TODO load/save cache
-	 # (2) tests
-	 # (3) try .gz and/or memory map of cache to see if either/both
-	 #     is faster
+Model.py
+# (1) TODO tests
+# (2) TODO load/save cache
+# (3) TODO try .gz and/or memory map cache to see if either/both is faster
 
 README.md
 
