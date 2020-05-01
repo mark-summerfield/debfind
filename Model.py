@@ -8,6 +8,7 @@ import datetime
 import enum
 import glob
 import os
+import pickle
 import sys
 import tempfile
 import time
@@ -107,33 +108,35 @@ class Model:
 
 
     def _clear(self):
-        self.debForName = {} # key = name, value = Deb
+        self._debForName = {} # key = name, value = Deb
         # namesFor*: key = stemmed word, value = set of names
-        self.namesForStemmedDescription = {}
-        self.namesForStemmedName = {}
-        self.namesForSection = {}
+        self._namesForStemmedDescription = {}
+        self._namesForStemmedName = {}
+        self._namesForSection = {}
         self.timer = time.monotonic()
 
 
     def __len__(self):
-        return len(self.debForName)
+        return len(self._debForName)
 
 
     def refresh(self, onReady):
         '''onReady is a callback: onReady(message: str,  done: bool)'''
         self._clear()
-        self._readPackages(onReady)
-        self._indexPackages(onReady)
+        if not self._loadFromCache(onReady):
+            self._readPackages(onReady)
+            self._indexPackages(onReady)
+            self._saveToCache()
 
 
     @property
     def allSections(self):
-        return self.namesForSection.keys()
+        return self._namesForSection.keys()
 
 
     @property
     def allNames(self):
-        return self.debForName.keys()
+        return self._debForName.keys()
 
 
     def query(self, query):
@@ -145,33 +148,33 @@ class Model:
         constrainToName = False
         if bool(query.section):
             constrainToSection = True
-            haveSection = self.namesForSection.get(query.section)
+            haveSection = self._namesForSection.get(query.section)
         if bool(query.descriptionWords):
             constrainToDescription = True
             words = _stemmedWords(query.descriptionWords)
             for word in words:
-                names = self.namesForStemmedDescription.get(word)
+                names = self._namesForStemmedDescription.get(word)
                 if names is not None:
                     haveDescription |= set(names)
             # haveDescription is names matching Any word
             # Only accept matching All (doesn't apply if only one word)
             if len(words) > 1 and not query.matchAnyDescriptionWord:
                 for word in words:
-                    names = self.namesForStemmedDescription.get(word)
+                    names = self._namesForStemmedDescription.get(word)
                     if names is not None:
                         haveDescription &= set(names)
         if bool(query.nameWords):
             constrainToName = True
             words = _stemmedWords(query.nameWords)
             for word in words:
-                names = self.namesForStemmedName.get(word)
+                names = self._namesForStemmedName.get(word)
                 if names is not None:
                     haveName |= set(names)
             # haveName is names matching Any word
             # Only accept matching All (doesn't apply if only one word)
             if len(words) > 1 and not query.matchAnyNameWord:
                 for word in words:
-                    names = self.namesForStemmedName.get(word)
+                    names = self._namesForStemmedName.get(word)
                     if names is not None:
                         haveName &= set(names)
         names = set(self.allNames)
@@ -200,8 +203,8 @@ class Model:
                 for debs in executor.map(self._readPackageFile, filenames):
                     count += 1
                     for deb in debs:
-                        self.debForName[deb.name] = deb
-            onReady(f'Read {len(self.debForName):,d} packages from '
+                        self._debForName[deb.name] = deb
+            onReady(f'Read {len(self._debForName):,d} packages from '
                     f'{count:,d} Packages files in '
                     f'{time.monotonic() - self.timer:0.1f}sec…', False)
         except OSError as err:
@@ -244,17 +247,64 @@ class Model:
 
 
     def _indexPackages(self, onReady):
-        onReady(f'Indexing {len(self.debForName):,d} packages…', False)
-        for name, deb in self.debForName.items(): # concurrency doesn't help
+        onReady(f'Indexing {len(self._debForName):,d} packages…', False)
+        for name, deb in self._debForName.items(): # concurrency no help
             nameWords = _stemmedWords(name)
             for word in nameWords:
-                self.namesForStemmedName.setdefault(word, set()).add(name)
+                self._namesForStemmedName.setdefault(word, set()).add(name)
             for word in _stemmedWords(deb.description) + nameWords:
-                self.namesForStemmedDescription.setdefault(word,
-                                                           set()).add(name)
-            self.namesForSection.setdefault(deb.section, set()).add(name)
-        onReady(f'Read and indexed {len(self.debForName):,d} packages in '
+                self._namesForStemmedDescription.setdefault(word,
+                                                            set()).add(name)
+            self._namesForSection.setdefault(deb.section, set()).add(name)
+        onReady(f'Read and indexed {len(self._debForName):,d} packages in '
                 f'{time.monotonic() - self.timer:0.1f}sec.', True)
+
+    @staticmethod
+    def _cacheFilename():
+        return (f'{tempfile.gettempdir()}/'
+                f'debfind-{datetime.date.today()}.cache')
+
+
+    def _loadFromCache(self, onReady):
+        filename = self._cacheFilename()
+        if not os.path.exists(filename):
+            return False
+        try:
+            with open(filename, 'rb') as file:
+                data = pickle.load(file)
+            debForName = data['debs']
+            namesForStemmedDescription = data['descs']
+            namesForStemmedName = data['names']
+            namesForSection = data['sects']
+            self._debForName = debForName
+            self._namesForStemmedDescription = namesForStemmedDescription
+            self._namesForStemmedName = namesForStemmedName
+            self._namesForSection = namesForSection
+            onReady(f'Read {len(self._debForName):,d} packages and indexes '
+                    f' in {time.monotonic() - self.timer:0.1f}sec.', True)
+            return True
+        except (KeyError, pickle.PickleError, OSError) as err:
+            print(f'Failed to write cache: {err}')
+            self._deleteCache()
+        return False
+
+
+    def _saveToCache(self):
+        data = dict(debs=self._debForName,
+                    descs=self._namesForStemmedDescription,
+                    names=self._namesForStemmedName,
+                    sects=self._namesForSection)
+        try:
+            with open(self._cacheFilename(), 'wb') as file:
+                pickle.dump(data, file, protocol=4)
+        except (pickle.PickleError, OSError) as err:
+            print(f'Failed to write cache: {err}')
+            self._deleteCache()
+
+
+    def _deleteCache(self):
+        with contextlib.suppress(FileNotFoundError):
+            os.remove(self._cacheFilename())
 
 
 class _State:
