@@ -3,8 +3,12 @@
 
 import collections
 import concurrent.futures
+import contextlib
 import datetime
+import enum
 import glob
+import os
+import sys
 import tempfile
 import time
 
@@ -47,7 +51,7 @@ class _Deb:
             self.ver = value
             return False
         if key == 'Section':
-            self.section = value
+            self.section = genericSection(value)
             return False
         if key == 'Description' or key == 'Npp-Description': # Ignore Npp?
             self.description += value
@@ -71,7 +75,7 @@ class Query:
     def __init__(self, *, section='', descriptionWords='',
                  matchAnyDescriptionWord=False, nameWords='',
                  matchAnyNameWord=False, includeLibraries=False):
-        self.section = section
+        self.section = genericSection(section)
         self.descriptionWords = descriptionWords
         self.matchAnyDescriptionWord = matchAnyDescriptionWord
         self.nameWords = nameWords
@@ -262,15 +266,74 @@ class Model:
 
 
     def _saveToCache(self):
-        print('TODO _saveToCache')
+        try:
+            with open(self.cacheFilename(), 'wt', encoding='utf-8') as file:
+                print(_DEB_FOR_NAME, file=file)
+                for deb in self.debForName.values():
+                    description = (deb.description.replace(_NL, _ITEM_SEP)
+                                                  .replace(_TAB, _INDENT))
+                    print(f'{deb.name}{_TAB}{deb.ver}{_TAB}{deb.section}'
+                          f'{_TAB}{deb.url}{_TAB}{deb.size}{_TAB}'
+                          f'{description}', file=file)
+                print(_NAMES_FOR_STEMMED_DESCRIPTION, file=file)
+                for word, names in self.namesForStemmedDescription.items():
+                    names = _ITEM_SEP.join(names)
+                    print(f'{word}{_TAB}{names}', file=file)
+                print(_NAMES_FOR_STEMMED_NAME, file=file)
+                for word, names in self.namesForStemmedName.items():
+                    names = _ITEM_SEP.join(names)
+                    print(f'{word}{_TAB}{names}', file=file)
+                print(_NAMES_FOR_SECTION, file=file)
+                for word, names in self.namesForSection.items():
+                    names = _ITEM_SEP.join(names)
+                    print(f'{word}{_TAB}{names}', file=file)
+        except OSError as err:
+            print(f'Failed to write cache: {err}')
+            self._deleteCache()
+
+
+    def _deleteCache(self):
+        with contextlib.suppress(FileNotFoundError):
+            os.remove(self.cacheFilename())
 
 
     def _loadFromCache(self, onReady):
+        filename = self.cacheFilename()
+        if not os.path.exists(filename):
+            return False
+        self.debForName.clear()
+        self.namesForStemmedDescription.clear()
+        self.namesForStemmedName.clear()
+        self.namesForSection.clear()
+        state = _CacheState.UNKNOWN
+        lino = 1
+        try:
+            with open(self.cacheFilename(), 'rt', encoding='utf-8') as file:
+                for line in file:
+                    line = line.strip()
+                    if line.startswith(_PREFIX) and line.endswith(_SUFFIX):
+                        state = _getNextCachedState(line)
+                    elif state is _CacheState.DEBS:
+                        _readCachedDeb(lino, line, self.debForName)
+                    elif state is _CacheState.DESCRIPTIONS:
+                        _readCachedIndex(lino, line,
+                                         self.namesForStemmedDescription)
+                    elif state is _CacheState.NAMES:
+                        _readCachedIndex(lino, line,
+                                         self.namesForStemmedName)
+                    elif state is _CacheState.SECTIONS:
+                        _readCachedSection(lino, line, self.namesForSection)
+                    else: # elif state is _CacheState.UNKNOWN:
+                        print(f'{lino}: Unknown: {line}')
+                    lino += 1
+            #onReady(f'Read {len(self.debForName):,d} packages and indexes '
+            #        'from cache in '
+            #        f'{time.monotonic() - self.timer:0.1f}sec.', True)
+            #return True
+        except OSError as err:
+            print(f'Failed to read cache: {err}')
+            self._deleteCache()
         print('TODO _loadFromCache')
-
-        #onReady(f'Read {len(self.debForName):,d} packages and indexes '
-        #        f'from cache in {time.monotonic() - self.timer:0.1f}sec.',
-        #        True)
         return False
 
 
@@ -306,6 +369,88 @@ _COMMON_STEMS = {
     'tool', 'version', 'with'}
 
 
+_TAB = '\t'
+_ITEM_SEP = '\v'
+_NL = '\n'
+_INDENT = '    '
+_PREFIX = '@@INDEX='
+_SUFFIX = '@@'
+_DEB_FOR_NAME = f'{_PREFIX}debForName{_SUFFIX}'
+_NAMES_FOR_STEMMED_DESCRIPTION = (
+    f'{_PREFIX}namesForStemmedDescription{_SUFFIX}')
+_NAMES_FOR_STEMMED_NAME = f'{_PREFIX}namesForStemmedName{_SUFFIX}'
+_NAMES_FOR_SECTION = f'{_PREFIX}namesForSection{_SUFFIX}'
+
+
+@enum.unique
+class _CacheState(enum.Enum):
+    UNKNOWN = 0
+    DEBS = 1
+    DESCRIPTIONS = 2
+    NAMES = 3
+    SECTIONS = 4
+
+
+def _getNextCachedState(line):
+    if line == _DEB_FOR_NAME:
+        return _CacheState.DEBS
+    if line == _NAMES_FOR_STEMMED_DESCRIPTION:
+        return _CacheState.DESCRIPTIONS
+    if line == _NAMES_FOR_STEMMED_NAME:
+        return _CacheState.NAMES
+    if line == _NAMES_FOR_SECTION:
+        return _CacheState.SECTIONS
+    return _CacheState.UNKNOWN
+
+
+def _readCachedDeb(lino, line, debForName):
+    fields = line.split(_TAB)
+    if len(fields) == 6:
+        deb = _Deb()
+        deb.name = fields[0]
+        deb.ver = fields[1]
+        deb.section = fields[2]
+        deb.url = fields[3]
+        deb.size = fields[4]
+        if deb.size.isdecimal():
+            deb.size = int(deb.size)
+        else:
+            deb.size = 0
+            print(f'{lino}: Deb invalid size {fields[4]!r}', file=sys.stderr)
+        deb.description = (fields[5].replace(_INDENT, _TAB)
+                                    .replace(_ITEM_SEP, _NL))
+        if deb.valid:
+            debForName[deb.name] = deb.totuple()
+            return
+    print(f'{lino}: Deb invalid line {line!r}', file=sys.stderr)
+
+
+def _readCachedIndex(lino, line, namesForWords):
+    fields = line.split(_TAB)
+    if len(fields) == 2:
+        word = fields[0]
+        for name in fields[1].split(_ITEM_SEP):
+            namesForWords.setdefault(word, set()).add(name)
+    else:
+        print(f'{lino}: Index invalid line {line!r}', file=sys.stderr)
+
+
+def _readCachedSection(lino, line, namesForSection):
+    fields = line.split(_TAB)
+    if len(fields) == 2:
+        section = genericSection(fields[0])
+        for name in fields[1].split(_ITEM_SEP):
+            namesForSection.setdefault(section, set()).add(name)
+    else:
+        print(f'{lino}: Index invalid line {line!r}', file=sys.stderr)
+
+
+def genericSection(section):
+    # immutable index = section.lastIndexOf('/');
+    # return (index > -1) ? section[index + 1..$] : section;
+    return section # TODO
+
+
 if __name__ == '__main__':
     import sys
 
@@ -313,7 +458,7 @@ if __name__ == '__main__':
     def onReady(message, done):
         print(message)
         if done:
-            print('Done.')
+            print('Ready.')
 
 
     def dumpIndexes(model):
@@ -333,7 +478,7 @@ if __name__ == '__main__':
 
     def check(id, query, names, mustInclude=None, minimum=-1,
               maximum=sys.maxsize):
-        print(f'{id: 2d} "{query}" ', end='')
+        print(f'{id:2d} "{query}" ', end='')
         if minimum == -1:
             minimum = len(mustInclude) if mustInclude is not None else 1
         assert minimum <= len(names) <= maximum, \
