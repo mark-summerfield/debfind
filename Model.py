@@ -51,7 +51,7 @@ class _Deb:
             self.ver = value
             return False
         if key == 'Section':
-            self.section = genericSection(value)
+            self.section = _genericSection(value)
             return False
         if key == 'Description' or key == 'Npp-Description': # Ignore Npp?
             self.description += value
@@ -75,7 +75,7 @@ class Query:
     def __init__(self, *, section='', descriptionWords='',
                  matchAnyDescriptionWord=False, nameWords='',
                  matchAnyNameWord=False, includeLibraries=False):
-        self.section = genericSection(section)
+        self.section = _genericSection(section)
         self.descriptionWords = descriptionWords
         self.matchAnyDescriptionWord = matchAnyDescriptionWord
         self.nameWords = nameWords
@@ -289,10 +289,8 @@ _COMMON_STEMS = {
     'tool', 'version', 'with'}
 
 
-def genericSection(section):
-    # immutable index = section.lastIndexOf('/');
-    # return (index > -1) ? section[index + 1..$] : section;
-    return section # TODO
+def _genericSection(section):
+    return section.split('/')[-1]
 
 
 if __name__ == '__main__':
@@ -315,6 +313,9 @@ if __name__ == '__main__':
         with open('stemmeddescs.txt', 'wt', encoding='utf-8') as file:
             for name, words in sorted(
                     model.namesForStemmedDescription.items()):
+                print(name, ', '.join(sorted(words)), file=file)
+        with open('sections.txt', 'wt', encoding='utf-8') as file:
+            for name, words in sorted(model.namesForSection.items()):
                 print(name, ', '.join(sorted(words)), file=file)
         print('dumped indexes')
         sys.exit()
@@ -457,7 +458,8 @@ if __name__ == '__main__':
     query.section = 'python'
     query.nameWords = 'django memoize'
     names = model.query(query) # All
-    check(18, query, names, set(), 0, 1)
+    check(18, query, names, {'python-django-memoize',
+                             'python3-django-memoize'}, 1, 5)
 
     query.clear()
     query.section = 'python'
