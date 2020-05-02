@@ -275,7 +275,7 @@ class Model:
             return False
         try:
             with open(filename, 'rt', encoding='utf-8') as file:
-                data = json.load(file, object_hook=unjson)
+                data = json.load(file, object_hook=unjsonize)
             debForName = data['debs']
             namesForStemmedDescription = data['descs']
             namesForStemmedName = data['names']
@@ -348,14 +348,14 @@ _COMMON_STEMS = {
     'tool', 'version', 'with'}
 
 
-def jsonize(item):
-    if isinstance(item, set):
-        return {'__py$set__': list(item)}
-    raise TypeError(f'cannot jsonize {type(item)}')
+def jsonize(obj):
+    if isinstance(obj, set):
+        return {'$': list(obj)}
+    raise TypeError(f'cannot jsonize {type(obj)}')
 
 
-def unjson(d):
-    value = d.get('__py$set__')
+def unjsonize(d):
+    value = d.get('$')
     if value is not None:
         return set(value)
     return d

@@ -155,29 +155,34 @@ def main():
 
     query.clear()
     query.nameWords = 'memoize'
-    names = model.query(query) # All
+    names = model.query(query) # Any
     check(20, query, names, minimum=5)
 
     query.clear()
     query.nameWords = 'memoize python3'
-    names = model.query(query) # All
+    names = model.query(query) # Any
     check(21, query, names)
 
     query.clear()
     query.nameWords = 'memoize python3 django'
-    names = model.query(query) # All
+    names = model.query(query) # Any
     check(22, query, names)
 
     query.clear()
-    query.nameWords = 'python3 django'
+    query.nameWords = 'python django'
     query.matchAnyNameWord = True
     names = model.query(query) # Any
-    check(23, query, names, minimum=2_500)
+    check(23, query, names, minimum=6_000)
+
+    query.clear()
+    query.nameWords = 'python django'
+    names = model.query(query) # All
+    check(24, query, names, minimum=250)
 
     query.clear()
     query.nameWords = 'zzzzzz'
-    names = model.query(query) # All
-    check(24, query, names, minimum=0, maximum=0)
+    names = model.query(query) # Any
+    check(25, query, names, minimum=0, maximum=0)
 
 
 def onReady(message, done):
