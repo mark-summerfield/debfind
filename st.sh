@@ -1,4 +1,4 @@
-tokei -s lines -f -t=Python
+tokei -s lines -f -t=Python -etest_*.py
 unrecognized.py -q
 flake . | \
     grep -v Model.py.*E127 | \
