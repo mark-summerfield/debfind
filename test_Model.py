@@ -18,7 +18,7 @@ def main():
         return
 
     print('Model tests')
-    query = Model.Query()
+    query = Model.Query() # Default is Match.ALL_WORDS for name & desc.
 
     query.clear()
     query.descriptionWords = "haskell numbers"
@@ -28,7 +28,7 @@ def main():
 
     query.clear()
     query.descriptionWords = 'haskell numbers'
-    query.matchAnyDescriptionWord = True
+    query.descriptionMatch = Model.Match.ANY_WORD
     query.includeLibraries = True
     names = model.query(query) # Any
     check(2, query, names, {'libghc-random-dev', 'haskell-doc',
@@ -41,7 +41,7 @@ def main():
 
     query.clear()
     query.descriptionWords = 'haskell daemon'
-    query.matchAnyDescriptionWord = True
+    query.descriptionMatch = Model.Match.ANY_WORD
     query.includeLibraries = True
     names = model.query(query) # Any
     check(4, query, names, {'libghc-random-dev', 'haskell-doc',
@@ -94,7 +94,7 @@ def main():
 
     query.clear()
     query.nameWords = 'python django memoize'
-    query.matchAnyNameWord = True
+    query.nameMatch = Model.Match.ANY_WORD
     names = model.query(query) # Any
     check(11, query, names, {
         'python-django-app-plugins', 'python3-affine', 'python3-distro',
@@ -145,7 +145,7 @@ def main():
     query.clear()
     query.section = 'python'
     query.nameWords = 'django memoize'
-    query.matchAnyNameWord = True
+    query.nameMatch = Model.Match.ANY_WORD
     names = model.query(query) # Any
     check(19, query, names, {
         'python-django-appconf', 'python3-django', 'python-django-common',
@@ -170,7 +170,7 @@ def main():
 
     query.clear()
     query.nameWords = 'python django'
-    query.matchAnyNameWord = True
+    query.nameMatch = Model.Match.ANY_WORD
     names = model.query(query) # Any
     check(23, query, names, minimum=6_000)
 

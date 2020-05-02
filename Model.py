@@ -5,6 +5,7 @@ import collections
 import concurrent.futures
 import contextlib
 import datetime
+import enum
 import glob
 import json
 import os
@@ -21,6 +22,15 @@ PACKAGE_PATTERN = '*Packages'
 
 Deb = collections.namedtuple('Deb', ('name', 'ver', 'section',
                                      'description', 'url', 'size'))
+
+
+@enum.unique
+class Match(enum.Enum):
+    ALL_WORDS = 0
+    ANY_WORD = 1
+
+    def __str__(self):
+        return self.name[:3].title()
 
 
 class _Deb:
@@ -73,31 +83,30 @@ class _Deb:
 class Query:
 
     def __init__(self, *, section='', descriptionWords='',
-                 matchAnyDescriptionWord=False, nameWords='',
-                 matchAnyNameWord=False, includeLibraries=False):
+                 descriptionMatch=Match.ALL_WORDS, nameWords='',
+                 nameMatch=Match.ALL_WORDS, includeLibraries=False):
         self.section = _genericSection(section)
         self.descriptionWords = descriptionWords
-        self.matchAnyDescriptionWord = matchAnyDescriptionWord
+        self.descriptionMatch = descriptionMatch
         self.nameWords = nameWords
-        self.matchAnyNameWord = matchAnyNameWord
+        self.nameMatch = nameMatch
         self.includeLibraries = includeLibraries
 
 
     def clear(self):
         self.section = ''
         self.descriptionWords = ''
-        self.matchAnyDescriptionWord = False
+        self.descriptionMatch = Match.ALL_WORDS
         self.nameWords = ''
-        self.matchAnyNameWord = False
+        self.nameMatch = Match.ALL_WORDS
         self.includeLibraries = False
 
 
     def __str__(self):
-        matchDesc = 'Any' if self.matchAnyDescriptionWord else 'All'
-        matchName = 'Any' if self.matchAnyNameWord else 'All'
         lib = ' Lib' if self.includeLibraries else ''
-        return (f'section={self.section} desc={self.descriptionWords!r}'
-                f'{matchDesc} name={self.nameWords!r}{matchName}{lib}')
+        return (f'section={self.section} '
+                f'desc={self.descriptionWords!r}{self.descriptionMatch} '
+                f'name={self.nameWords!r}{self.nameMatch}{lib}')
 
 
 class Model:
@@ -162,7 +171,7 @@ class Model:
                     haveDescription |= set(names)
             # haveDescription is names matching Any word
             # Only accept matching All (doesn't apply if only one word)
-            if len(words) > 1 and not query.matchAnyDescriptionWord:
+            if len(words) > 1 and query.descriptionMatch is Match.ALL_WORDS:
                 for word in words:
                     names = self._namesForStemmedDescription.get(word)
                     if names is not None:
@@ -176,7 +185,7 @@ class Model:
                     haveName |= set(names)
             # haveName is names matching Any word
             # Only accept matching All (doesn't apply if only one word)
-            if len(words) > 1 and not query.matchAnyNameWord:
+            if len(words) > 1 and query.nameMatch is Match.ALL_WORDS:
                 for word in words:
                     names = self._namesForStemmedName.get(word)
                     if names is not None:
@@ -275,7 +284,7 @@ class Model:
             return False
         try:
             with open(filename, 'rt', encoding='utf-8') as file:
-                data = json.load(file, object_hook=unjsonize)
+                data = json.load(file, object_hook=_unjsonize)
             debForName = data['debs']
             namesForStemmedDescription = data['descs']
             namesForStemmedName = data['names']
@@ -301,7 +310,7 @@ class Model:
         try:
             with open(self._cacheFilename(), 'wt',
                       encoding='utf-8') as file:
-                json.dump(data, file, default=jsonize)
+                json.dump(data, file, default=_jsonize)
         except (TypeError, OSError) as err:
             print(f'Failed to write cache: {err}')
             self._deleteCache()
@@ -348,13 +357,13 @@ _COMMON_STEMS = {
     'tool', 'version', 'with'}
 
 
-def jsonize(obj):
+def _jsonize(obj):
     if isinstance(obj, set):
         return {'$': list(obj)}
-    raise TypeError(f'cannot jsonize {type(obj)}')
+    raise TypeError(f'cannot _jsonize {type(obj)}')
 
 
-def unjsonize(d):
+def _unjsonize(d):
     value = d.get('$')
     if value is not None:
         return set(value)
