@@ -13,7 +13,7 @@ import tempfile
 import time
 
 import regex as re
-import snowballstemmer
+import Stemmer
 
 
 PACKAGE_DIR = '/var/lib/apt/lists'
@@ -209,16 +209,20 @@ class Model:
 
     def _readPackages(self, onReady):
         try:
-            count = 0
-            filenames = glob.iglob(f'{PACKAGE_DIR}/{PACKAGE_PATTERN}')
+            filenames = glob.glob(f'{PACKAGE_DIR}/{PACKAGE_PATTERN}')
             onReady('Reading Packages files…', False)
+            fileCount = 0
+            allDebs = []
             with concurrent.futures.ProcessPoolExecutor() as executor:
-                for debs in executor.map(self._readPackageFile, filenames):
-                    count += 1
-                    for deb in debs:
-                        self._debForName[deb.name] = deb
+                futures = {executor.submit(self._readPackageFile, filename)
+                           for filename in filenames}
+                for future in concurrent.futures.as_completed(futures):
+                    allDebs += future.result()
+                    fileCount += 1
+            for deb in allDebs:
+                self._debForName[deb.name] = deb
             onReady(f'Read {len(self._debForName):,d} packages from '
-                    f'{count:,d} Packages files in '
+                    f'{fileCount:,d} Packages files in '
                     f'{time.monotonic() - self.timer:0.1f}sec…', False)
         except OSError as err:
             print(err)
@@ -260,17 +264,20 @@ class Model:
 
 
     def _indexPackages(self, onReady):
-        onReady(f'Indexing {len(self._debForName):,d} packages…', False)
-        for name, deb in self._debForName.items(): # concurrency no help
-            nameWords = _stemmedWords(name)
-            for word in nameWords:
+        size = len(self._debForName)
+        onReady(f'Indexing {size:,d} packages…', False)
+        for name, deb in self._debForName.items():
+            for word in _stemmedWords(name):
                 self._namesForStemmedName.setdefault(word, set()).add(name)
-            for word in _stemmedWords(deb.description) + nameWords:
+                self._namesForStemmedDescription.setdefault(word,
+                                                            set()).add(name)
+            for word in _stemmedWords(deb.description):
                 self._namesForStemmedDescription.setdefault(word,
                                                             set()).add(name)
             self._namesForSection.setdefault(deb.section, set()).add(name)
-        onReady(f'Read and indexed {len(self._debForName):,d} packages in '
+        onReady(f'Read and indexed {size:,d} packages in '
                 f'{time.monotonic() - self.timer:0.1f}sec.', True)
+
 
     @staticmethod
     def _cacheFilename():
@@ -282,6 +289,7 @@ class Model:
         filename = self._cacheFilename()
         if not os.path.exists(filename):
             return False
+        onReady(f'Reading cache…', False)
         try:
             with open(filename, 'rt', encoding='utf-8') as file:
                 data = json.load(file, object_hook=_unjsonize)
@@ -343,7 +351,7 @@ def _maybeKeyValue(line):
 
 def _stemmedWords(line):
     nonLetterRx = re.compile(r'\P{L}+')
-    stemmer = snowballstemmer.stemmer('english')
+    stemmer = Stemmer.Stemmer('en')
     return [word for word in stemmer.stemWords(
             nonLetterRx.sub(' ', line).casefold().split())
             if len(word) > 1 and not word.isdigit() and
