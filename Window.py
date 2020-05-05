@@ -112,6 +112,7 @@ class Window(wx.Frame, WindowActions.Mixin, WindowUtil.Mixin):
 
     def updateUi(self, enable=False):
         self.findButton.Enable(enable)
+        self.refreshButton.Enable(enable)
         self.debsListCtrl.Enable(enable)
         self.debTextCtrl.Enable(enable)
 
