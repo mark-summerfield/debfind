@@ -98,9 +98,12 @@ class Window(wx.Frame, WindowActions.Mixin, WindowUtil.Mixin):
 
 
     def onChar(self, event):
-        code = event.GetKeyCode() # key = chr(code)
+        code = event.GetKeyCode()
+        key = chr(code)
         if code == wx.WXK_F1:
             self.onHelp()
+        elif event.AltDown and key in 'cC':
+            self.sectionChoice.SetFocus()
         else:
             event.Skip()
 
