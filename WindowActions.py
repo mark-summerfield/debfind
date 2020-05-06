@@ -19,7 +19,15 @@ class Mixin:
 
 
     def onRefresh(self, _event=None):
-        print('onRefresh') # TODO
+        self.updateUi()
+        self.sectionChoice.Clear()
+        self.SetStatusText('Refreshing…')
+        wx.CallLater(100, self.refresh)
+
+
+    def refresh(self):
+        self.model.load(self.onReady, refresh=True)
+        self.updateSections()
 
 
     def onAbout(self, _event=None):

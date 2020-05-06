@@ -39,7 +39,6 @@ class Window(wx.Frame, WindowActions.Mixin, WindowUtil.Mixin):
                                            style=wx.RB_GROUP)
         self.nameAnyRadio = wx.RadioButton(self.panel, label='Any Word&s')
         self.sectionLabel = wx.StaticText(self.panel, label='Se&ction')
-        # TODO when Alt+C is pressed sectionChoice should get the focus
         self.sectionChoice = wx.Choice(self.panel)
         self.librariesCheckbox = wx.CheckBox(self.panel,
                                              label='Include &Libraries')
@@ -122,12 +121,16 @@ class Window(wx.Frame, WindowActions.Mixin, WindowUtil.Mixin):
 
     def loadModel(self):
         self.model = Model.Model(self.onReady)
-        self.sectionChoice.Set(sorted(self.model.allSections))
-        self.sectionChoice.Insert(['(Any)'], 0)
-        self.sectionChoice.Selection = 0
+        self.updateSections()
 
 
     def onReady(self, message, done):
         self.SetStatusText(message)
         if done:
             self.updateUi(True)
+
+
+    def updateSections(self):
+        self.sectionChoice.Set(sorted(self.model.allSections))
+        self.sectionChoice.Insert(['(Any)'], 0)
+        self.sectionChoice.Selection = 0
