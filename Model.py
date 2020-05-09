@@ -75,6 +75,7 @@ class _Deb:
         return False
 
 
+    @property
     def totuple(self):
         return Deb(self.name, self.ver, self.section, self.description,
                    self.url, self.size)
@@ -150,6 +151,18 @@ class Model:
     @property
     def allNames(self):
         return self._debForName.keys()
+
+
+    def descriptionFor(self, name):
+        deb = self._debForName.get(name)
+        if deb is None:
+            return ''
+        # TODO truncate + ellipsis if necessary
+        return deb.description
+
+
+    def debForName(self, name):
+        return self._debForName.get(name)
 
 
     def query(self, query):
@@ -238,7 +251,7 @@ class Model:
                     self._readPackageLine(filename, lino, line, debs, deb,
                                           state)
             if deb.valid:
-                debs.append(deb.totuple())
+                debs.append(deb.totuple)
             return debs
         except OSError as err:
             print(err)
@@ -247,7 +260,7 @@ class Model:
     def _readPackageLine(self, filename, lino, line, debs, deb, state):
         if not line.strip():
             if deb.valid:
-                debs.append(deb.totuple())
+                debs.append(deb.totuple)
             deb.clear()
             return
         if state.inDescription or state.inContinuation:
@@ -297,7 +310,8 @@ class Model:
             namesForStemmedDescription = data['descs']
             namesForStemmedName = data['names']
             namesForSection = data['sects']
-            self._debForName = debForName
+            for name, deb in debForName.items():
+                self._debForName[name] = Deb(*deb)
             self._namesForStemmedDescription = namesForStemmedDescription
             self._namesForStemmedName = namesForStemmedName
             self._namesForSection = namesForSection

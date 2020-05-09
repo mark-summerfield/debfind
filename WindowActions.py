@@ -10,12 +10,47 @@ import wx.adv
 
 import Const
 import HelpForm
+import Model
 
 
 class Mixin:
 
     def onFind(self, _event=None):
-        print('onFind') # TODO
+        self.debTextCtrl.Clear()
+        self.debsListCtrl.ClearAll()
+        section = self.sectionChoice.GetString(
+            self.sectionChoice.CurrentSelection)
+        if section == Const.ANY_SECTION:
+            section = ''
+        descMatch = (Model.Match.ANY_WORD if self.descAnyRadio.Value else
+                     Model.Match.ALL_WORDS)
+        nameMatch = (Model.Match.ANY_WORD if self.nameAnyRadio.Value else
+                     Model.Match.ALL_WORDS)
+        query = Model.Query(
+            section=section, descriptionWords=self.descEdit.Value,
+            descriptionMatch=descMatch, nameWords=self.nameEdit.Value,
+            nameMatch=nameMatch,
+            includeLibraries=self.librariesCheckbox.Value)
+        names = self.model.query(query)
+        if names:
+            if len(names) == 1:
+                self.SetStatusText('Found one matching package.')
+            else:
+                self.SetStatusText(
+                    f'Found {len(names):,d} matching packages.')
+            self.debsListCtrl.AppendColumn('Name')
+            self.debsListCtrl.AppendColumn('Description')
+            self.debsListCtrl.AlternateRowColour = True
+            self.debsListCtrl.setResizeColumn(1)
+            for name in names:
+                self.debsListCtrl.Append(
+                    (name, self.model.descriptionFor(name)))
+            # width = self.debsListCtrl.Size.width
+            # self.debsListCtrl.resizeColumn(width // 4)
+            # TODO adjust/expand columns
+            # TODO select first (which should update debTextCtrl)
+        else:
+            self.SetStatusText('No matching packages found.')
 
 
     def onRefresh(self, _event=None):

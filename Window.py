@@ -3,6 +3,7 @@
 
 import wx
 
+import Const
 import Model
 import WindowActions
 import WindowUtil
@@ -87,6 +88,7 @@ class Window(wx.Frame, WindowActions.Mixin, WindowUtil.Mixin):
     def makeBindings(self):
         # TODO when the user navigates the ListCtrl show the current Deb in
         # the TextCtrl (or blank it)
+        self.debsListCtrl.Bind(wx.EVT_LIST_ITEM_SELECTED, self.showDeb)
         self.findButton.Bind(wx.EVT_BUTTON, self.onFind)
         self.refreshButton.Bind(wx.EVT_BUTTON, self.onRefresh)
         self.aboutButton.Bind(wx.EVT_BUTTON, self.onAbout)
@@ -132,5 +134,10 @@ class Window(wx.Frame, WindowActions.Mixin, WindowUtil.Mixin):
 
     def updateSections(self):
         self.sectionChoice.Set(sorted(self.model.allSections))
-        self.sectionChoice.Insert(['(Any)'], 0)
+        self.sectionChoice.Insert([Const.ANY_SECTION], 0)
         self.sectionChoice.Selection = 0
+
+
+    def showDeb(self):
+        self.debTextCtrl.Clear()
+        print('showDeb') # TODO
