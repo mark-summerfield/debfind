@@ -49,7 +49,9 @@ class Window(wx.Frame, WindowActions.Mixin, WindowUtil.Mixin):
         self.helpButton = wx.Button(self.panel, wx.ID_HELP)
         self.quitButton = wx.Button(self.panel, wx.ID_EXIT)
         self.splitter = wx.SplitterWindow(self.panel, style=wx.SP_3DSASH)
-        self.debsListCtrl = WindowUtil.ListCtrl(self.splitter)
+        style = (wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.LC_HRULES |
+                 wx.LC_VRULES)
+        self.debsListCtrl = wx.ListCtrl(self.splitter, style=style)
         self.debTextCtrl = wx.TextCtrl(self.splitter,
                                        style=wx.TE_MULTILINE | wx.TE_RICH2)
         self.splitter.SplitVertically(self.debsListCtrl, self.debTextCtrl)
@@ -65,18 +67,18 @@ class Window(wx.Frame, WindowActions.Mixin, WindowUtil.Mixin):
         grid.Add(self.descEdit, (0, 1), (1, 2), flag=flagX, border=border)
         grid.Add(self.descAllRadio, (0, 3), flag=flag, border=border)
         grid.Add(self.descAnyRadio, (0, 4), flag=flag, border=border)
-        grid.Add(self.quitButton, (0, 5), flag=flagX, border=border)
+        grid.Add(self.quitButton, (0, 5), flag=flag, border=border)
         grid.Add(self.nameLabel, (1, 0), flag=flag, border=border)
         grid.Add(self.nameEdit, (1, 1), (1, 2), flag=flagX, border=border)
         grid.Add(self.nameAllRadio, (1, 3), flag=flag, border=border)
         grid.Add(self.nameAnyRadio, (1, 4), flag=flag, border=border)
-        grid.Add(self.refreshButton, (1, 5), flag=flagX, border=border)
+        grid.Add(self.refreshButton, (1, 5), flag=flag, border=border)
         grid.Add(self.sectionLabel, (2, 0), flag=flag, border=border)
         grid.Add(self.sectionChoice, (2, 1), flag=flagX, border=border)
         grid.Add(self.librariesCheckbox, (2, 2), flag=flag, border=border)
-        grid.Add(self.findButton, (2, 3), flag=flagX, border=border)
-        grid.Add(self.helpButton, (2, 4), flag=flagX, border=border)
-        grid.Add(self.aboutButton, (2, 5), flag=flagX, border=border)
+        grid.Add(self.findButton, (2, 3), flag=flag, border=border)
+        grid.Add(self.helpButton, (2, 4), flag=flag, border=border)
+        grid.Add(self.aboutButton, (2, 5), flag=flag, border=border)
         grid.Add(self.splitter, (3, 0), (1, 6), flag=flagX, border=border)
         grid.AddGrowableCol(1)
         grid.AddGrowableCol(2)
@@ -86,8 +88,6 @@ class Window(wx.Frame, WindowActions.Mixin, WindowUtil.Mixin):
 
 
     def makeBindings(self):
-        # TODO when the user navigates the ListCtrl show the current Deb in
-        # the TextCtrl (or blank it)
         self.debsListCtrl.Bind(wx.EVT_LIST_ITEM_SELECTED, self.showDeb)
         self.findButton.Bind(wx.EVT_BUTTON, self.onFind)
         self.refreshButton.Bind(wx.EVT_BUTTON, self.onRefresh)
@@ -103,7 +103,7 @@ class Window(wx.Frame, WindowActions.Mixin, WindowUtil.Mixin):
         key = chr(code)
         if code == wx.WXK_F1:
             self.onHelp()
-        elif event.AltDown and key in 'cC':
+        elif event.AltDown() and key in 'cC':
             self.sectionChoice.SetFocus()
         else:
             event.Skip()
@@ -138,6 +138,6 @@ class Window(wx.Frame, WindowActions.Mixin, WindowUtil.Mixin):
         self.sectionChoice.Selection = 0
 
 
-    def showDeb(self):
+    def showDeb(self, _event=None):
         self.debTextCtrl.Clear()
         print('showDeb') # TODO

@@ -1,6 +1,6 @@
 DebFind.pyw
 Window.py # TODO
-WindowActions.py # TODO
+WindowActions.py
 WindowUtil.py
 HelpForm.py
 Const.py

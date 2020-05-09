@@ -40,15 +40,13 @@ class Mixin:
                     f'Found {len(names):,d} matching packages.')
             self.debsListCtrl.AppendColumn('Name')
             self.debsListCtrl.AppendColumn('Description')
-            self.debsListCtrl.AlternateRowColour = True
-            self.debsListCtrl.setResizeColumn(1)
-            for name in names:
+            for name in sorted(names):
                 self.debsListCtrl.Append(
                     (name, self.model.descriptionFor(name)))
-            # width = self.debsListCtrl.Size.width
-            # self.debsListCtrl.resizeColumn(width // 4)
-            # TODO adjust/expand columns
-            # TODO select first (which should update debTextCtrl)
+            self.debsListCtrl.SetColumnWidth(0, -1)
+            self.debsListCtrl.SetColumnWidth(1, -1)
+            self.debsListCtrl.Select(0)
+            self.debsListCtrl.SetFocus()
         else:
             self.SetStatusText('No matching packages found.')
 
