@@ -61,24 +61,25 @@ class Window(wx.Frame, WindowActions.Mixin, WindowUtil.Mixin):
     def makeLayout(self):
         flag = wx.ALL
         flagX = wx.ALL | wx.EXPAND
+        flagC = wx.ALL | wx.ALIGN_CENTER
         border = 3
         grid = wx.GridBagSizer()
         grid.Add(self.descLabel, (0, 0), flag=flag, border=border)
         grid.Add(self.descEdit, (0, 1), (1, 2), flag=flagX, border=border)
         grid.Add(self.descAllRadio, (0, 3), flag=flag, border=border)
         grid.Add(self.descAnyRadio, (0, 4), flag=flag, border=border)
-        grid.Add(self.quitButton, (0, 5), flag=flag, border=border)
+        grid.Add(self.quitButton, (0, 5), flag=flagC, border=border)
         grid.Add(self.nameLabel, (1, 0), flag=flag, border=border)
         grid.Add(self.nameEdit, (1, 1), (1, 2), flag=flagX, border=border)
         grid.Add(self.nameAllRadio, (1, 3), flag=flag, border=border)
         grid.Add(self.nameAnyRadio, (1, 4), flag=flag, border=border)
-        grid.Add(self.refreshButton, (1, 5), flag=flag, border=border)
+        grid.Add(self.refreshButton, (1, 5), flag=flagC, border=border)
         grid.Add(self.sectionLabel, (2, 0), flag=flag, border=border)
         grid.Add(self.sectionChoice, (2, 1), flag=flagX, border=border)
         grid.Add(self.librariesCheckbox, (2, 2), flag=flag, border=border)
-        grid.Add(self.findButton, (2, 3), flag=flag, border=border)
-        grid.Add(self.helpButton, (2, 4), flag=flag, border=border)
-        grid.Add(self.aboutButton, (2, 5), flag=flag, border=border)
+        grid.Add(self.findButton, (2, 3), flag=flagC, border=border)
+        grid.Add(self.helpButton, (2, 4), flag=flagC, border=border)
+        grid.Add(self.aboutButton, (2, 5), flag=flagC, border=border)
         grid.Add(self.splitter, (3, 0), (1, 6), flag=flagX, border=border)
         grid.AddGrowableCol(1)
         grid.AddGrowableCol(2)
@@ -123,7 +124,9 @@ class Window(wx.Frame, WindowActions.Mixin, WindowUtil.Mixin):
             if size.height > height:
                 height = size.height
         for button in buttons:
-            button.SetMinSize((width, height))
+            size = (width, height)
+            button.SetSize(size)
+            button.SetMinSize(size)
 
 
     def updateUi(self, enable=False):
