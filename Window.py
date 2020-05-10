@@ -112,6 +112,18 @@ class Window(wx.Frame, WindowActions.Mixin, WindowUtil.Mixin):
     def fixLayout(self):
         self.splitter.SetSashPosition(self.splitter.Size.width // 2)
         self.MinSize = self.BestSize
+        width = 0
+        height = 0
+        buttons = (self.findButton, self.refreshButton, self.aboutButton,
+                   self.helpButton, self.quitButton)
+        for button in buttons:
+            size = button.GetBestSize()
+            if size.width > width:
+                width = size.width
+            if size.height > height:
+                height = size.height
+        for button in buttons:
+            button.SetMinSize((width, height))
 
 
     def updateUi(self, enable=False):
