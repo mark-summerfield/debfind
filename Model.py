@@ -232,7 +232,11 @@ class Model:
                 for future in concurrent.futures.as_completed(futures):
                     allDebs += future.result()
                     fileCount += 1
+            seen = set()
             for deb in allDebs:
+                if deb.name in seen:
+                    continue # Some debs appear in > 1 Packages files
+                seen.add(deb.name)
                 self._debForName[deb.name] = deb
             onReady(f'Read {len(self._debForName):,d} packages from '
                     f'{fileCount:,d} Packages files in '
