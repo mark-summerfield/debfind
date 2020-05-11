@@ -57,6 +57,8 @@ class Form(wx.Dialog):
         bg = wx.SystemSettings.GetColour(
             wx.SYS_COLOUR_BTNFACE).GetAsString(wx.C2S_HTML_SYNTAX)
         self.htmlLabel = wx.html.HtmlWindow(self)
+        if 'gtk2' in wx.PlatformInfo or 'gtk3' in wx.PlatformInfo:
+            self.htmlLabel.SetStandardFonts()
         self.htmlLabel.SetPage(HTML_TEXT.format(bg=bg))
         self.okButton = wx.Button(self, wx.ID_OK)
 
