@@ -4,6 +4,7 @@
 import wx
 
 import Const
+import DebView
 import Model
 import WindowActions
 import WindowUtil
@@ -52,9 +53,8 @@ class Window(wx.Frame, WindowActions.Mixin, WindowUtil.Mixin):
         style = (wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.LC_HRULES |
                  wx.LC_VRULES)
         self.debsListCtrl = wx.ListCtrl(self.splitter, style=style)
-        self.debTextCtrl = wx.TextCtrl(self.splitter,
-                                       style=wx.TE_MULTILINE | wx.TE_RICH2)
-        self.splitter.SplitVertically(self.debsListCtrl, self.debTextCtrl)
+        self.debView = DebView.DebView(self.splitter)
+        self.splitter.SplitVertically(self.debsListCtrl, self.debView)
         self.CreateStatusBar()
 
 
@@ -133,7 +133,7 @@ class Window(wx.Frame, WindowActions.Mixin, WindowUtil.Mixin):
         self.findButton.Enable(enable)
         self.refreshButton.Enable(enable)
         self.debsListCtrl.Enable(enable)
-        self.debTextCtrl.Enable(enable)
+        self.debView.Enable(enable)
 
 
     def loadModel(self):
@@ -154,5 +154,10 @@ class Window(wx.Frame, WindowActions.Mixin, WindowUtil.Mixin):
 
 
     def showDeb(self, _event=None):
-        self.debTextCtrl.Clear()
-        print('showDeb') # TODO
+        self.debView.clear()
+        index = self.debsListCtrl.GetFirstSelected()
+        if index > -1:
+            name = self.debsListCtrl.GetItemText(index)
+            deb = self.model.debForName(name)
+            if deb is not None:
+                self.debView.showDeb(deb)

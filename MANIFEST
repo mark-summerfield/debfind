@@ -1,8 +1,9 @@
-DebFind.pyw
-Window.py # TODO
+DebFind.pyw # VERSION
+Window.py
 WindowActions.py
 WindowUtil.py
 HelpForm.py
+DebView.py # TODO
 Const.py
 Model.py # TODO
 test_Model.py

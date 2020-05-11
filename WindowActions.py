@@ -16,7 +16,7 @@ import Model
 class Mixin:
 
     def onFind(self, _event=None):
-        self.debTextCtrl.Clear()
+        self.debView.clear()
         self.debsListCtrl.ClearAll()
         section = self.sectionChoice.GetString(
             self.sectionChoice.CurrentSelection)

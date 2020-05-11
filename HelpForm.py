@@ -5,9 +5,8 @@ import wx
 import wx.html
 
 
-HTML_TEXT = '''<html>
-<body style="background-color: {bg};">
-<h2><center><u><font color="white">DebFind</font></u></center></h2>
+HTML_TEXT = '''<html><body style="background-color: {bg};">
+<h2><center><b><font color="white">DebFind</font></b></center></h2>
 <p>
 <font color="brown"><b>
 A GUI application for finding Debian packages on Debian and Debian-based
@@ -46,33 +45,33 @@ class Form(wx.Dialog):
         kwargs['style'] = style
         super().__init__(*args, **kwargs)
         self.Title = 'Help — ' + wx.App.Get().AppName
-        self.make_widgets()
-        self.make_layout()
-        self.make_bindings()
-        self.ok_button.SetFocus()
+        self.makeWidgets()
+        self.makeLayout()
+        self.makeBindings()
+        self.okButton.SetFocus()
         self.MinSize = (200, 200)
         self.Size = (400, 450)
 
 
-    def make_widgets(self):
+    def makeWidgets(self):
         bg = wx.SystemSettings.GetColour(
             wx.SYS_COLOUR_BTNFACE).GetAsString(wx.C2S_HTML_SYNTAX)
-        self.html_label = wx.html.HtmlWindow(self)
-        self.html_label.SetPage(HTML_TEXT.format(bg=bg))
-        self.ok_button = wx.Button(self, wx.ID_OK)
+        self.htmlLabel = wx.html.HtmlWindow(self)
+        self.htmlLabel.SetPage(HTML_TEXT.format(bg=bg))
+        self.okButton = wx.Button(self, wx.ID_OK)
 
 
-    def make_layout(self):
+    def makeLayout(self):
         flag = wx.ALL | wx.EXPAND
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.html_label, 1, flag=flag, border=3)
-        sizer.Add(self.ok_button, 0, flag=wx.ALL | wx.ALIGN_CENTER,
+        sizer.Add(self.htmlLabel, 1, flag=flag, border=3)
+        sizer.Add(self.okButton, 0, flag=wx.ALL | wx.ALIGN_CENTER,
                   border=3)
         self.SetSizer(sizer)
         self.Fit()
 
 
-    def make_bindings(self):
+    def makeBindings(self):
         self.Bind(wx.EVT_CHAR_HOOK, self.on_char)
         self.Bind(wx.EVT_CLOSE, self.on_close)
 
