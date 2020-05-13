@@ -26,6 +26,12 @@ Deb = collections.namedtuple(
 
 
 @enum.unique
+class FutureKind(enum.Enum):
+    DEBS = 0
+    DESCS = 1
+
+
+@enum.unique
 class Match(enum.Enum):
     ALL_WORDS = 0
     ANY_WORD = 1
@@ -223,30 +229,41 @@ class Model:
 
     def _readPackages(self, onReady):
         wrongCpu = 'i386' if sys.maxsize > 2 ** 32 else 'amd64'
-        filenames = [name for name in
-                     glob.iglob(f'{PACKAGE_DIR}/{PACKAGE_PATTERN}')
-                     if wrongCpu not in name]
+        packageFilenames = [name for name in
+                            glob.iglob(f'{PACKAGE_DIR}/{PACKAGE_PATTERN}')
+                            if wrongCpu not in name]
+        descFilenames = [] # TODO populate descFilenames
         onReady('Reading Packages files…', False)
-        fileCount = 0
+        packageFileCount = 0
+        descForName = {}
         allDebs = []
         try:
             with concurrent.futures.ProcessPoolExecutor() as executor:
-                futures = {executor.submit(self._readPackageFile, filename)
-                           for filename in filenames}
+                futures = set()
+                for filename in packageFilenames:
+                    futures.add(executor.submit(self._readPackageFile,
+                                filename))
+                for filename in descFilenames:
+                    futures.add(executor.submit(self._readDescFile,
+                                filename))
                 for future in concurrent.futures.as_completed(futures):
-                    allDebs += future.result()
-                    fileCount += 1
-                # TODO create a new lot of futures to read the translation
-                # files and populate descForName dict
+                    kind, data = future.result()
+                    if kind is FutureKind.DEBS:
+                        allDebs += data
+                        packageFileCount += 1
+                    elif kind is FutureKind.DESCS:
+                        descForName.update(data)
             seen = set()
             for deb in allDebs:
                 if deb.name in seen:
                     continue # Some debs appear in > 1 Packages files
                 seen.add(deb.name)
-                # TODO deb.desc = descForName.get(deb.name, deb.desc)
+                desc = descForName.get(deb.name)
+                if desc is not None:
+                    deb = deb._replace(desc=desc)
                 self._debForName[deb.name] = deb
             onReady(f'Read {len(self._debForName):,d} packages from '
-                    f'{fileCount:,d} Packages files in '
+                    f'{packageFileCount:,d} Packages files in '
                     f'{time.monotonic() - self.timer:0.1f}sec…', False)
         except OSError as err:
             print(err)
@@ -263,9 +280,9 @@ class Model:
                                           state)
             if deb.valid:
                 debs.append(deb.totuple)
-            return debs
         except OSError as err:
             print(err)
+        return (FutureKind.DEBS, debs)
 
 
     def _readPackageLine(self, filename, lino, line, debs, deb, state):
@@ -285,6 +302,13 @@ class Model:
             state.inContinuation = True
         else:
             state.inDescription = deb.update(key, value)
+
+
+    def _readDescFile(self, filename):
+        nameForDesc = {}
+        # TODO create a new lot of futures to read the translation
+        # files and populate descForName dict
+        return (FutureKind.DESCS, nameForDesc)
 
 
     def _indexPackages(self, onReady):
