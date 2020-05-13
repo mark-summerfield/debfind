@@ -32,12 +32,12 @@ class DebView(wx.html.HtmlWindow):
 
     def showDeb(self, deb):
         size = deb.size # TODO B | KB | MB | GB
-        description = ('<p>' + html.escape(deb.description)
-                                   .replace('\n\n', '</p><p>') + '</p>')
+        desc = ('<p>' + html.escape(deb.desc)
+                            .replace('\n\n', '</p><p>') + '</p>')
         self.SetPage(DEB.format(
-            name=html.escape(deb.name), version=html.escape(deb.ver),
+            name=html.escape(deb.name), version=html.escape(deb.version),
             size=size, url=deb.url, section=html.escape(deb.section),
-            description=description))
+            desc=desc))
 
 
 UNSELECTED_HTML = '''<html><body><body style="background-color: white;">
@@ -49,5 +49,5 @@ DEB = '''<html><body><body style="background-color: white;">
 <p><center>v{version} &bull; {size}</center></p>
 <p><center><font color="darkgreen"><u>{url}</u></font></center></p>
 <p><center>Section: {section}</center></p>
-{description}
+{desc}
 </body></html>'''

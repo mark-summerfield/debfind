@@ -27,8 +27,8 @@ class Mixin:
         nameMatch = (Model.Match.ANY_WORD if self.nameAnyRadio.Value else
                      Model.Match.ALL_WORDS)
         query = Model.Query(
-            section=section, descriptionWords=self.descEdit.Value,
-            descriptionMatch=descMatch, nameWords=self.nameEdit.Value,
+            section=section, descWords=self.descEdit.Value,
+            descMatch=descMatch, nameWords=self.nameEdit.Value,
             nameMatch=nameMatch,
             includeLibraries=self.librariesCheckbox.Value)
         names = self.model.query(query)
@@ -41,8 +41,7 @@ class Mixin:
             self.debsListCtrl.AppendColumn('Name')
             self.debsListCtrl.AppendColumn('Description')
             for name in sorted(names):
-                self.debsListCtrl.Append(
-                    (name, self.model.descriptionFor(name)))
+                self.debsListCtrl.Append((name, self.model.descFor(name)))
             self.debsListCtrl.SetColumnWidth(0, -1)
             self.debsListCtrl.SetColumnWidth(1, -1)
             self.debsListCtrl.Select(0)

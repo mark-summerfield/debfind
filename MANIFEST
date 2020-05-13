@@ -1,14 +1,11 @@
-# TODO s/description/desc/g
-# TODO On 64-bit systems ignore 32-bit package files and vice versa
-# TODO After reading *Packages files (but before indexing) also read
-# all the '*i18n_Translation*' files to create descriptionForName dict
-# key = package name, value = description.
+# TODO After reading *Packages files (but before indexing) also read all
+# the '*i18n_Translation*' files to create
+# descForName dict key = package name, value = desc.
 # Do this inside the multiprocessing loop and then afterwards create
-# descriptionForName and then for every deb replace the
-# current description with the descriptionForName description if it
-# exists and is longer; and then, finally index. (No need to cache
-# descriptionForName since the descriptions will be cached as part of
-# the debs.)
+# descForName and then for every deb replace the current desc with the
+# descForName desc if it exists and is longer; and then, finally index.
+# (No need to cache descForName since the descs will be cached as part
+# of the debs.)
 DebFind.pyw # VERSION
 Window.py
 WindowActions.py

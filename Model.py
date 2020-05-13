@@ -9,6 +9,7 @@ import enum
 import glob
 import json
 import os
+import sys
 import tempfile
 import time
 
@@ -20,8 +21,8 @@ PACKAGE_DIR = '/var/lib/apt/lists'
 PACKAGE_PATTERN = '*Packages'
 
 
-Deb = collections.namedtuple('Deb', ('name', 'ver', 'section',
-                                     'description', 'url', 'size'))
+Deb = collections.namedtuple(
+    'Deb', ('name', 'version', 'section', 'desc', 'url', 'size'))
 
 
 @enum.unique
@@ -46,9 +47,9 @@ class _Deb:
 
     def clear(self):
         self.name = ''
-        self.ver = ''
+        self.version = ''
         self.section = ''
-        self.description = ''
+        self.desc = ''
         self.url = ''
         self.size = 0
 
@@ -58,13 +59,13 @@ class _Deb:
             self.name = value
             return False
         if key == 'Version':
-            self.ver = value
+            self.version = value
             return False
         if key == 'Section':
             self.section = _genericSection(value)
             return False
         if key == 'Description' or key == 'Npp-Description': # Ignore Npp?
-            self.description += value
+            self.desc += value
             return True
         if key == 'Homepage':
             self.url = value
@@ -77,18 +78,18 @@ class _Deb:
 
     @property
     def totuple(self):
-        return Deb(self.name, self.ver, self.section, self.description,
+        return Deb(self.name, self.version, self.section, self.desc,
                    self.url, self.size)
 
 
 class Query:
 
-    def __init__(self, *, section='', descriptionWords='',
-                 descriptionMatch=Match.ALL_WORDS, nameWords='',
+    def __init__(self, *, section='', descWords='',
+                 descMatch=Match.ALL_WORDS, nameWords='',
                  nameMatch=Match.ALL_WORDS, includeLibraries=False):
         self.section = _genericSection(section)
-        self.descriptionWords = descriptionWords
-        self.descriptionMatch = descriptionMatch
+        self.descWords = descWords
+        self.descMatch = descMatch
         self.nameWords = nameWords
         self.nameMatch = nameMatch
         self.includeLibraries = includeLibraries
@@ -96,8 +97,8 @@ class Query:
 
     def clear(self):
         self.section = ''
-        self.descriptionWords = ''
-        self.descriptionMatch = Match.ALL_WORDS
+        self.descWords = ''
+        self.descMatch = Match.ALL_WORDS
         self.nameWords = ''
         self.nameMatch = Match.ALL_WORDS
         self.includeLibraries = False
@@ -106,7 +107,7 @@ class Query:
     def __str__(self):
         lib = ' Lib' if self.includeLibraries else ''
         return (f'section={self.section} '
-                f'desc={self.descriptionWords!r}{self.descriptionMatch} '
+                f'desc={self.descWords!r}{self.descMatch} '
                 f'name={self.nameWords!r}{self.nameMatch}{lib}')
 
 
@@ -153,12 +154,12 @@ class Model:
         return self._debForName.keys()
 
 
-    def descriptionFor(self, name):
+    def descFor(self, name):
         deb = self._debForName.get(name)
         if deb is None:
             return ''
         # TODO truncate + ellipsis if necessary
-        return deb.description
+        return deb.desc
 
 
     def debForName(self, name):
@@ -175,16 +176,16 @@ class Model:
         if bool(query.section):
             constrainToSection = True
             haveSection = self._namesForSection.get(query.section)
-        if bool(query.descriptionWords):
+        if bool(query.descWords):
             constrainToDescription = True
-            words = _stemmedWords(query.descriptionWords)
+            words = _stemmedWords(query.descWords)
             for word in words:
                 names = self._namesForStemmedDescription.get(word)
                 if names is not None:
                     haveDescription |= set(names)
             # haveDescription is names matching Any word
             # Only accept matching All (doesn't apply if only one word)
-            if len(words) > 1 and query.descriptionMatch is Match.ALL_WORDS:
+            if len(words) > 1 and query.descMatch is Match.ALL_WORDS:
                 for word in words:
                     names = self._namesForStemmedDescription.get(word)
                     if names is not None:
@@ -221,22 +222,28 @@ class Model:
 
 
     def _readPackages(self, onReady):
+        wrongCpu = 'i386' if sys.maxsize > 2 ** 32 else 'amd64'
+        filenames = [name for name in
+                     glob.iglob(f'{PACKAGE_DIR}/{PACKAGE_PATTERN}')
+                     if wrongCpu not in name]
+        onReady('Reading Packages files…', False)
+        fileCount = 0
+        allDebs = []
         try:
-            filenames = glob.glob(f'{PACKAGE_DIR}/{PACKAGE_PATTERN}')
-            onReady('Reading Packages files…', False)
-            fileCount = 0
-            allDebs = []
             with concurrent.futures.ProcessPoolExecutor() as executor:
                 futures = {executor.submit(self._readPackageFile, filename)
                            for filename in filenames}
                 for future in concurrent.futures.as_completed(futures):
                     allDebs += future.result()
                     fileCount += 1
+                # TODO create a new lot of futures to read the translation
+                # files and populate descForName dict
             seen = set()
             for deb in allDebs:
                 if deb.name in seen:
                     continue # Some debs appear in > 1 Packages files
                 seen.add(deb.name)
+                # TODO deb.desc = descForName.get(deb.name, deb.desc)
                 self._debForName[deb.name] = deb
             onReady(f'Read {len(self._debForName):,d} packages from '
                     f'{fileCount:,d} Packages files in '
@@ -270,7 +277,7 @@ class Model:
         if state.inDescription or state.inContinuation:
             if line.startswith((' ', '\t')):
                 if state.inDescription:
-                    deb.description += line
+                    deb.desc += line
                 return
             state.inDescription = state.inContinuation = False
         key, value, ok = _maybeKeyValue(line)
@@ -288,7 +295,7 @@ class Model:
                 self._namesForStemmedName.setdefault(word, set()).add(name)
                 self._namesForStemmedDescription.setdefault(word,
                                                             set()).add(name)
-            for word in _stemmedWords(deb.description):
+            for word in _stemmedWords(deb.desc):
                 self._namesForStemmedDescription.setdefault(word,
                                                             set()).add(name)
             self._namesForSection.setdefault(deb.section, set()).add(name)

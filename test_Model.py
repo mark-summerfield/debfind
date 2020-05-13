@@ -21,27 +21,27 @@ def main():
     query = Model.Query() # Default is Match.ALL_WORDS for name & desc.
 
     query.clear()
-    query.descriptionWords = "haskell numbers"
+    query.descWords = "haskell numbers"
     query.includeLibraries = True
     names = model.query(query) # All
     check(1, query, names, {'libghc-random-dev'}, 2)
 
     query.clear()
-    query.descriptionWords = 'haskell numbers'
-    query.descriptionMatch = Model.Match.ANY_WORD
+    query.descWords = 'haskell numbers'
+    query.descMatch = Model.Match.ANY_WORD
     query.includeLibraries = True
     names = model.query(query) # Any
     check(2, query, names, {'libghc-random-dev', 'haskell-doc',
                             'libghc-strict-dev'}, 800)
 
     query.clear()
-    query.descriptionWords = 'haskell daemon'
+    query.descWords = 'haskell daemon'
     names = model.query(query) # All
     check(3, query, names, {'hdevtools'}, 1, 1)
 
     query.clear()
-    query.descriptionWords = 'haskell daemon'
-    query.descriptionMatch = Model.Match.ANY_WORD
+    query.descWords = 'haskell daemon'
+    query.descMatch = Model.Match.ANY_WORD
     query.includeLibraries = True
     names = model.query(query) # Any
     check(4, query, names, {'libghc-random-dev', 'haskell-doc',
