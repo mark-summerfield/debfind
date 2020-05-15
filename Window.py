@@ -137,6 +137,7 @@ class Window(wx.Frame, WindowActions.Mixin, WindowUtil.Mixin):
 
 
     def loadModel(self):
+        wx.BeginBusyCursor()
         self.model = Model.Model(self.onReady)
         self.updateSections()
 
@@ -145,6 +146,7 @@ class Window(wx.Frame, WindowActions.Mixin, WindowUtil.Mixin):
         self.SetStatusText(message)
         if done:
             self.updateUi(True)
+            wx.EndBusyCursor()
 
 
     def updateSections(self):

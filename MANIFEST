@@ -1,3 +1,4 @@
+# TODO binary cache format to make it faster to load/save?
 DebFind.pyw # VERSION
 Window.py
 WindowActions.py
@@ -5,7 +6,7 @@ WindowUtil.py
 HelpForm.py
 DebView.py # TODO B | KB | MB | ...
 Const.py
-Model.py # TODO truncate desc for list view
+Model.py
 test_Model.py
 
 README.md

@@ -162,11 +162,10 @@ class Model:
         return self._debForName.keys()
 
 
-    def descFor(self, name):
+    def descForName(self, name):
         deb = self._debForName.get(name)
         if deb is None:
             return ''
-        # TODO truncate + ellipsis if necessary
         return deb.desc
 
 
@@ -309,7 +308,7 @@ class Model:
 
 
     def _readDescFile(self, filename):
-        descRx = re.compile(r'Description-\w+:\s+', re.DOTALL)
+        descRx = re.compile(r'Description(:?-\w+)?:\s+')
         nameForDesc = {}
         name = None
         desc = []
@@ -319,7 +318,7 @@ class Model:
                     if name is None:
                         if line.startswith('Package:'):
                             if name is not None:
-                                nameForDesc[name] = ' '.join(desc)
+                                nameForDesc[name] = ' '.join(desc).strip()
                                 desc.clear()
                             name = line[8:].strip()
                     elif line.startswith('Description-md5'):
@@ -327,18 +326,19 @@ class Model:
                     else: # start of desc or in desc or end of desc
                         match = descRx.match(line)
                         if match is not None:
-                            line = line[match.end():]
-                        line = line.rstrip()
-                        if not line:
-                            nameForDesc[name] = ' '.join(desc)
-                            name = None
-                            desc.clear()
-                        if line == ' .':
-                            desc.append('\n')
+                            desc += [line[match.end():].strip(), '\n']
                         else:
-                            desc.append(line)
+                            line = line.rstrip()
+                            if not line:
+                                nameForDesc[name] = ' '.join(desc).strip()
+                                name = None
+                                desc.clear()
+                            if line == ' .':
+                                desc.append('\n')
+                            else:
+                                desc.append(line)
             if name is not None:
-                nameForDesc[name] = ''.join(desc)
+                nameForDesc[name] = ''.join(desc).strip()
         except OSError as err:
             print(err)
         return (FutureKind.DESCS, nameForDesc)

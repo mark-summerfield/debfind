@@ -4,6 +4,7 @@
 import datetime
 import platform
 import sys
+import textwrap
 
 import wx
 import wx.adv
@@ -16,38 +17,40 @@ import Model
 class Mixin:
 
     def onFind(self, _event=None):
-        self.debView.clear()
-        self.debsListCtrl.ClearAll()
-        section = self.sectionChoice.GetString(
-            self.sectionChoice.CurrentSelection)
-        if section == Const.ANY_SECTION:
-            section = ''
-        descMatch = (Model.Match.ANY_WORD if self.descAnyRadio.Value else
-                     Model.Match.ALL_WORDS)
-        nameMatch = (Model.Match.ANY_WORD if self.nameAnyRadio.Value else
-                     Model.Match.ALL_WORDS)
-        query = Model.Query(
-            section=section, descWords=self.descEdit.Value,
-            descMatch=descMatch, nameWords=self.nameEdit.Value,
-            nameMatch=nameMatch,
-            includeLibraries=self.librariesCheckbox.Value)
-        names = self.model.query(query)
-        if names:
-            if len(names) == 1:
-                self.SetStatusText('Found one matching package.')
+        with wx.BusyCursor():
+            self.debView.clear()
+            self.debsListCtrl.ClearAll()
+            section = self.sectionChoice.GetString(
+                self.sectionChoice.CurrentSelection)
+            if section == Const.ANY_SECTION:
+                section = ''
+            descMatch = (Model.Match.ANY_WORD if self.descAnyRadio.Value
+                         else Model.Match.ALL_WORDS)
+            nameMatch = (Model.Match.ANY_WORD if self.nameAnyRadio.Value
+                         else Model.Match.ALL_WORDS)
+            query = Model.Query(
+                section=section, descWords=self.descEdit.Value,
+                descMatch=descMatch, nameWords=self.nameEdit.Value,
+                nameMatch=nameMatch,
+                includeLibraries=self.librariesCheckbox.Value)
+            names = self.model.query(query)
+            if names:
+                if len(names) == 1:
+                    self.SetStatusText('Found one matching package.')
+                else:
+                    self.SetStatusText(
+                        f'Found {len(names):,d} matching packages.')
+                self.debsListCtrl.AppendColumn('Name')
+                self.debsListCtrl.AppendColumn('Description')
+                for name in sorted(names):
+                    desc = _shortDesc(self.model.descForName(name))
+                    self.debsListCtrl.Append((name, desc))
+                self.debsListCtrl.SetColumnWidth(0, -1)
+                self.debsListCtrl.SetColumnWidth(1, -1)
+                self.debsListCtrl.Select(0)
+                self.debsListCtrl.SetFocus()
             else:
-                self.SetStatusText(
-                    f'Found {len(names):,d} matching packages.')
-            self.debsListCtrl.AppendColumn('Name')
-            self.debsListCtrl.AppendColumn('Description')
-            for name in sorted(names):
-                self.debsListCtrl.Append((name, self.model.descFor(name)))
-            self.debsListCtrl.SetColumnWidth(0, -1)
-            self.debsListCtrl.SetColumnWidth(1, -1)
-            self.debsListCtrl.Select(0)
-            self.debsListCtrl.SetFocus()
-        else:
-            self.SetStatusText('No matching packages found.')
+                self.SetStatusText('No matching packages found.')
 
 
     def onRefresh(self, _event=None):
@@ -58,6 +61,7 @@ class Mixin:
 
 
     def refresh(self):
+        wx.BeginBusyCursor()
         self.model.load(self.onReady, refresh=True)
         self.updateSections()
 
@@ -101,3 +105,12 @@ License: GPL-3.0.'''
         if self.helpForm:
             self.helpForm.Destroy()
         self.Destroy()
+
+
+def _shortDesc(desc):
+    if len(desc) > Const.MAX_DESC_LEN:
+        i = desc.find('\n')
+        if i > 20:
+            return desc[:i]
+        return textwrap.shorten(desc, Const.MAX_DESC_LEN, placeholder='…')
+    return desc
