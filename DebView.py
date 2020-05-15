@@ -29,7 +29,7 @@ class DebView(wx.html.HtmlWindow):
 
 
     def showDeb(self, deb):
-        size = deb.size # TODO B | KB | MB | GB
+        size = sizeof_fmt(deb.size, decs=0)
         desc = ('<p>' + html.escape(deb.desc).replace('\n', '</p><p>') +
                 '</p>')
         self.SetPage(DEB.format(
@@ -38,15 +38,21 @@ class DebView(wx.html.HtmlWindow):
             desc=desc))
 
 
+def sizeof_fmt(num, *, decs=3, suffix='B'):
+    for unit in ('', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi'):
+        if abs(num) < 1024.0:
+            return f'{num:3.{decs}f}{unit}{suffix}'
+        num /= 1024.0
+    return f'{num:3.{decs}f}Yi{suffix}'
+
+
 UNSELECTED_HTML = '''<html><body><body style="background-color: white;">
 <p><center><font color="gray">(No package selected.)</font></center></p>
 </body></html>'''
 
 DEB = '''<html><body><body style="background-color: white;">
 <p><center><font color="navy"><b>{name}</b></font></center></p>
-<p><center>v{version} &bull; {size}</center></p>
+<p><center>v{version} &bull; {size} &bull; {section}</center></p>
 <p><center><font color="darkgreen"><u>{url}</u></font></center></p>
 {desc}
-<hr>
-<center>Section: {section}</center>
 </body></html>'''
