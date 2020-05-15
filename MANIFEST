@@ -1,19 +1,11 @@
-# TODO After reading *Packages files (but before indexing) also read all
-# the '*i18n_Translation*' files to create
-# descForName dict key = package name, value = desc.
-# Do this inside the multiprocessing loop and then afterwards create
-# descForName and then for every deb replace the current desc with the
-# descForName desc if it exists and is longer; and then, finally index.
-# (No need to cache descForName since the descs will be cached as part
-# of the debs.)
 DebFind.pyw # VERSION
 Window.py
 WindowActions.py
 WindowUtil.py
 HelpForm.py
-DebView.py # TODO
+DebView.py # TODO B | KB | MB | ...
 Const.py
-Model.py # TODO
+Model.py # TODO truncate desc for list view
 test_Model.py
 
 README.md

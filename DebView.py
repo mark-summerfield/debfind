@@ -12,8 +12,6 @@ class DebView(wx.html.HtmlWindow):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if 'gtk2' in wx.PlatformInfo or 'gtk3' in wx.PlatformInfo:
-            self.SetStandardFonts()
         self.clear()
 
 
@@ -32,8 +30,8 @@ class DebView(wx.html.HtmlWindow):
 
     def showDeb(self, deb):
         size = deb.size # TODO B | KB | MB | GB
-        desc = ('<p>' + html.escape(deb.desc)
-                            .replace('\n\n', '</p><p>') + '</p>')
+        desc = ('<p>' + html.escape(deb.desc).replace('\n', '</p><p>') +
+                '</p>')
         self.SetPage(DEB.format(
             name=html.escape(deb.name), version=html.escape(deb.version),
             size=size, url=deb.url, section=html.escape(deb.section),
@@ -48,6 +46,7 @@ DEB = '''<html><body><body style="background-color: white;">
 <p><center><font color="navy"><b>{name}</b></font></center></p>
 <p><center>v{version} &bull; {size}</center></p>
 <p><center><font color="darkgreen"><u>{url}</u></font></center></p>
-<p><center>Section: {section}</center></p>
 {desc}
+<hr>
+<center>Section: {section}</center>
 </body></html>'''

@@ -6,6 +6,7 @@ import concurrent.futures
 import contextlib
 import datetime
 import enum
+import fnmatch
 import glob
 import json
 import os
@@ -19,6 +20,7 @@ import Stemmer
 
 PACKAGE_DIR = '/var/lib/apt/lists'
 PACKAGE_PATTERN = '*Packages'
+DESC_PATTERN = '*i18n_Translation-en'
 
 
 Deb = collections.namedtuple(
@@ -229,12 +231,15 @@ class Model:
 
     def _readPackages(self, onReady):
         wrongCpu = 'i386' if sys.maxsize > 2 ** 32 else 'amd64'
-        packageFilenames = [name for name in
-                            glob.iglob(f'{PACKAGE_DIR}/{PACKAGE_PATTERN}')
-                            if wrongCpu not in name]
-        descFilenames = [] # TODO populate descFilenames
+        packageFilenames = []
+        descFilenames = []
+        for name in glob.iglob(f'{PACKAGE_DIR}/*'):
+            if wrongCpu not in name and fnmatch.fnmatch(name,
+                                                        PACKAGE_PATTERN):
+                packageFilenames.append(name)
+            elif fnmatch.fnmatch(name, DESC_PATTERN):
+                descFilenames.append(name)
         onReady('Reading Packages files…', False)
-        packageFileCount = 0
         descForName = {}
         allDebs = []
         try:
@@ -250,7 +255,6 @@ class Model:
                     kind, data = future.result()
                     if kind is FutureKind.DEBS:
                         allDebs += data
-                        packageFileCount += 1
                     elif kind is FutureKind.DESCS:
                         descForName.update(data)
             seen = set()
@@ -263,7 +267,7 @@ class Model:
                     deb = deb._replace(desc=desc)
                 self._debForName[deb.name] = deb
             onReady(f'Read {len(self._debForName):,d} packages from '
-                    f'{packageFileCount:,d} Packages files in '
+                    f'{len(packageFilenames):,d} Packages files in '
                     f'{time.monotonic() - self.timer:0.1f}sec…', False)
         except OSError as err:
             print(err)
@@ -305,9 +309,38 @@ class Model:
 
 
     def _readDescFile(self, filename):
+        descRx = re.compile(r'Description-\w+:\s+', re.DOTALL)
         nameForDesc = {}
-        # TODO create a new lot of futures to read the translation
-        # files and populate descForName dict
+        name = None
+        desc = []
+        try:
+            with open(filename, 'rt', encoding='utf-8') as file:
+                for line in file:
+                    if name is None:
+                        if line.startswith('Package:'):
+                            if name is not None:
+                                nameForDesc[name] = ' '.join(desc)
+                                desc.clear()
+                            name = line[8:].strip()
+                    elif line.startswith('Description-md5'):
+                        continue
+                    else: # start of desc or in desc or end of desc
+                        match = descRx.match(line)
+                        if match is not None:
+                            line = line[match.end():]
+                        line = line.rstrip()
+                        if not line:
+                            nameForDesc[name] = ' '.join(desc)
+                            name = None
+                            desc.clear()
+                        if line == ' .':
+                            desc.append('\n')
+                        else:
+                            desc.append(line)
+            if name is not None:
+                nameForDesc[name] = ''.join(desc)
+        except OSError as err:
+            print(err)
         return (FutureKind.DESCS, nameForDesc)
 
 
