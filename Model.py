@@ -8,8 +8,8 @@ import datetime
 import enum
 import fnmatch
 import glob
-import json
 import os
+import pickle
 import sys
 import tempfile
 import time
@@ -18,7 +18,7 @@ import regex as re
 import Stemmer
 
 
-PACKAGE_DIR = '/var/lib/apt/lists'
+DATA_DIR = '/var/lib/apt/lists'
 PACKAGE_PATTERN = '*Packages'
 DESC_PATTERN = '*i18n_Translation-en'
 
@@ -232,7 +232,7 @@ class Model:
         wrongCpu = 'i386' if sys.maxsize > 2 ** 32 else 'amd64'
         packageFilenames = []
         descFilenames = []
-        for name in glob.iglob(f'{PACKAGE_DIR}/*'):
+        for name in glob.iglob(f'{DATA_DIR}/*'):
             if wrongCpu not in name and fnmatch.fnmatch(name,
                                                         PACKAGE_PATTERN):
                 packageFilenames.append(name)
@@ -372,21 +372,16 @@ class Model:
             return False
         onReady(f'Reading cache…', False)
         try:
-            with open(filename, 'rt', encoding='utf-8') as file:
-                data = json.load(file, object_hook=_unjsonize)
-            debForName = data['debs']
-            namesForStemmedDescription = data['descs']
-            namesForStemmedName = data['names']
-            namesForSection = data['sects']
-            for name, deb in debForName.items():
-                self._debForName[name] = Deb(*deb)
-            self._namesForStemmedDescription = namesForStemmedDescription
-            self._namesForStemmedName = namesForStemmedName
-            self._namesForSection = namesForSection
+            with open(filename, 'rb') as file:
+                data = pickle.load(file)
+            self._debForName = data['debs']
+            self._namesForStemmedDescription = data['descs']
+            self._namesForStemmedName = data['names']
+            self._namesForSection = data['sects']
             onReady(f'Read {len(self._debForName):,d} packages and indexes '
                     f'in {time.monotonic() - self.timer:0.1f}sec.', True)
             return True
-        except (KeyError, json.JSONDecodeError, OSError) as err:
+        except (KeyError, pickle.PickleError, OSError) as err:
             print(f'Failed to write cache: {err}')
             self._deleteCache()
         return False
@@ -398,9 +393,8 @@ class Model:
                     names=self._namesForStemmedName,
                     sects=self._namesForSection)
         try:
-            with open(self._cacheFilename(), 'wt',
-                      encoding='utf-8') as file:
-                json.dump(data, file, default=_jsonize)
+            with open(self._cacheFilename(), 'wb') as file:
+                pickle.dump(data, file, 4)
         except (TypeError, OSError) as err:
             print(f'Failed to write cache: {err}')
             self._deleteCache()
@@ -445,16 +439,3 @@ _COMMON_STEMS = {
     'document', 'file', 'for', 'gnu', 'in', 'kernel', 'librari', 'linux',
     'modul', 'of', 'on', 'packag', 'runtim', 'support', 'the', 'to',
     'tool', 'version', 'with'}
-
-
-def _jsonize(obj):
-    if isinstance(obj, set):
-        return {'$': list(obj)}
-    raise TypeError(f'cannot _jsonize {type(obj)}')
-
-
-def _unjsonize(d):
-    value = d.get('$')
-    if value is not None:
-        return set(value)
-    return d
