@@ -319,6 +319,9 @@ class Model:
                     if name is None:
                         if line.startswith('Package:'):
                             if name is not None:
+                                if inList:
+                                    inList = False
+                                    desc.append('\v-')
                                 nameForDesc[name] = ' '.join(desc).strip()
                                 desc.clear()
                             name = line[8:].strip()
@@ -327,7 +330,7 @@ class Model:
                     else: # start of desc or in desc or end of desc
                         match = descRx.match(line)
                         if match is not None:
-                            desc += [line[match.end():].strip(), '\n']
+                            desc = [line[match.end():].strip(), '\n']
                         else:
                             line = line.rstrip()
                             if not line:
