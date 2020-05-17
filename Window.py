@@ -111,8 +111,10 @@ class Window(wx.Frame, WindowActions.Mixin, WindowUtil.Mixin):
 
 
     def fixLayout(self):
-        self.splitter.SetSashPosition(self.splitter.Size.width // 2)
-        self.MinSize = self.BestSize
+        width = self.splitter.Size.width
+        offset = (width // 2) if width < 600 else (width - 400)
+        self.splitter.SetSashPosition(offset)
+        self.MinSize = self.BestSize if width < 600 else (600, 400)
         width = 0
         height = 0
         buttons = (self.findButton, self.refreshButton, self.aboutButton,

@@ -12,9 +12,8 @@ README.md
 
 st.sh
 
+# TODO binary cache or in a std binary format (if faster to save/load & smaller) ?
 # TODO once ready put on github & update ddebfind's README.md to point to it
 # TODO mention on GtkD list (on the thread I opened)
-# TODO font size +- (& save & restore) ?
-# TODO binary cache or in a std binary format (if faster to save/load & smaller) ?
 
 # vim: syn=yaml
