@@ -309,6 +309,7 @@ class Model:
 
     def _readDescFile(self, filename):
         descRx = re.compile(r'Description(:?-\w+)?:\s+')
+        inList = False
         nameForDesc = {}
         name = None
         desc = []
@@ -334,10 +335,24 @@ class Model:
                                 name = None
                                 desc.clear()
                             if line == ' .':
+                                if inList:
+                                    inList = False
+                                    desc.append('\v-')
                                 desc.append('\n')
+                            elif line.lstrip().startswith(('* ', '- ')):
+                                if not inList:
+                                    desc.append('\v+')
+                                    inList = True
+                                desc.append(f'\t{line.lstrip()[2:]}')
                             else:
+                                if inList:
+                                    inList = False
+                                    desc.append('\v-')
                                 desc.append(line)
             if name is not None:
+                if inList:
+                    inList = False
+                    desc.append('\v-')
                 nameForDesc[name] = ''.join(desc).strip()
         except OSError as err:
             print(err)

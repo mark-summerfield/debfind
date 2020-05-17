@@ -30,12 +30,15 @@ class DebView(wx.html.HtmlWindow):
 
     def showDeb(self, deb):
         size = sizeof_fmt(deb.size, decs=0)
-        desc = ('<p>' + html.escape(deb.desc).replace('\n', '</p><p>') +
-                '</p>')
+        shortDesc, desc = deb.desc.split('\n', 1)
+        shortDesc = html.escape(shortDesc)
+        desc = ('<p>' + html.escape(desc).replace('\v+', '<ul>')
+                .replace('\t', '<li>').replace('\v-', '</ul>')
+                .replace('\n', '</p><p>') + '</p>')
         self.SetPage(DEB.format(
             name=html.escape(deb.name), version=html.escape(deb.version),
             size=size, url=deb.url, section=html.escape(deb.section),
-            desc=desc))
+            shortDesc=shortDesc, desc=desc))
 
 
 def sizeof_fmt(num, *, decs=3, suffix='B'):
@@ -52,7 +55,8 @@ UNSELECTED_HTML = '''<html><body><body style="background-color: white;">
 
 DEB = '''<html><body><body style="background-color: white;">
 <p><center><font color="navy"><b>{name}</b></font></center></p>
-<p><center>v{version} &bull; {size} &bull; {section}</center></p>
-<p><center><font color="darkgreen"><u>{url}</u></font></center></p>
+<p><center><font color="darkblue">{shortDesc}</font></center></p>
 {desc}
+<hr>
+<center>v{version} &bull; {size} &bull; {section}</center>
 </body></html>'''
