@@ -13,7 +13,8 @@ README.md
 st.sh
 
 # TODO implement include documentation (includeDoc) which if unchecked
-# ignores packages whose names end '-doc'
+# ignores packages whose names end '-doc'; similarly include data
+# (includeData) '-data'
 # TODO binary cache or in a std binary format (if faster to save/load & smaller) ?
 # TODO once ready put on github & update ddebfind's README.md to point to it
 # TODO mention on GtkD list (on the thread I opened)
