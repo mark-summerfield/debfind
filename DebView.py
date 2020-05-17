@@ -57,6 +57,6 @@ DEB = '''<html><body><body style="background-color: white;">
 <p><center><font color="navy"><b>{name}</b></font></center></p>
 <p><center><font color="navy">{shortDesc}</font></center></p>
 {desc}
-<hr>
-<center>v{version} &bull; {size} &bull; {section}</center>
+<p><center><font color="darkgreen"><u>{url}</u></font></center></p>
+<p><center>v{version} &bull; {size} &bull; {section}</center></p>
 </body></html>'''
