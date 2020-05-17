@@ -55,7 +55,7 @@ UNSELECTED_HTML = '''<html><body><body style="background-color: white;">
 
 DEB = '''<html><body><body style="background-color: white;">
 <p><center><font color="navy"><b>{name}</b></font></center></p>
-<p><center><font color="darkblue">{shortDesc}</font></center></p>
+<p><center><font color="navy">{shortDesc}</font></center></p>
 {desc}
 <hr>
 <center>v{version} &bull; {size} &bull; {section}</center>
