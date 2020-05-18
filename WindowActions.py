@@ -32,8 +32,8 @@ class Mixin:
             query = Model.Query(
                 section=section, descWords=self.descEdit.Value,
                 descMatch=descMatch, nameWords=self.nameEdit.Value,
-                nameMatch=nameMatch,
-                includeLibraries=self.librariesCheckbox.Value)
+                nameMatch=nameMatch, includeLibs=self.libCheckbox.Value,
+                includeDocs=self.docCheckbox.Value)
             names = self.model.query(query)
             if names:
                 if len(names) == 1:

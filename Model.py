@@ -94,13 +94,15 @@ class Query:
 
     def __init__(self, *, section='', descWords='',
                  descMatch=Match.ALL_WORDS, nameWords='',
-                 nameMatch=Match.ALL_WORDS, includeLibraries=False):
+                 nameMatch=Match.ALL_WORDS, includeLibs=False,
+                 includeDocs=False):
         self.section = _genericSection(section)
         self.descWords = descWords
         self.descMatch = descMatch
         self.nameWords = nameWords
         self.nameMatch = nameMatch
-        self.includeLibraries = includeLibraries
+        self.includeLibs = includeLibs
+        self.includeDocs = includeDocs
 
 
     def clear(self):
@@ -109,14 +111,16 @@ class Query:
         self.descMatch = Match.ALL_WORDS
         self.nameWords = ''
         self.nameMatch = Match.ALL_WORDS
-        self.includeLibraries = False
+        self.includeLibs = False
+        self.includeDocs = False
 
 
     def __str__(self):
-        lib = ' Lib' if self.includeLibraries else ''
+        lib = ' Lib' if self.includeLibs else ''
+        doc = ' Doc' if self.includeDocs else ''
         return (f'section={self.section} '
                 f'desc={self.descWords!r}{self.descMatch} '
-                f'name={self.nameWords!r}{self.nameMatch}{lib}')
+                f'name={self.nameWords!r}{self.nameMatch}{lib}{doc}')
 
 
 class Model:
@@ -218,14 +222,18 @@ class Model:
             names &= haveDescription
         if constrainToName:
             names &= haveName
-        if query.includeLibraries:
+        if query.includeLibs and query.includeDocs:
             return names
-        noLibNames = set()
+        filteredNames = set()
         for name in names:
-            if (('libre' in name or not name.startswith('lib')) and
-                    '-lib' not in name):
-                noLibNames.add(name)
-        return noLibNames
+            if (not query.includeLibs and
+                    (('libre' not in name or name.startswith('lib')) and
+                     '-lib' in name)):
+                continue
+            if not query.includeDocs and name.endswith(('-doc', '-docs')):
+                continue
+            filteredNames.add(name)
+        return filteredNames
 
 
     def _readPackages(self, onReady):

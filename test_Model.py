@@ -22,14 +22,15 @@ def main():
 
     query.clear()
     query.descWords = "haskell numbers"
-    query.includeLibraries = True
+    query.includeLibs = True
     names = model.query(query) # All
     check(1, query, names, {'libghc-random-dev'}, 2)
 
     query.clear()
     query.descWords = 'haskell numbers'
     query.descMatch = Model.Match.ANY_WORD
-    query.includeLibraries = True
+    query.includeLibs = True
+    query.includeDocs = True
     names = model.query(query) # Any
     check(2, query, names, {'libghc-random-dev', 'haskell-doc',
                             'libghc-strict-dev'}, 800)
@@ -42,15 +43,16 @@ def main():
     query.clear()
     query.descWords = 'haskell daemon'
     query.descMatch = Model.Match.ANY_WORD
-    query.includeLibraries = True
+    query.includeLibs = True
+    query.includeDocs = True
     names = model.query(query) # Any
     check(4, query, names, {'libghc-random-dev', 'haskell-doc',
-                            'libghc-strict-dev'}, 1000)
+                            'libghc-strict-dev'}, 1_000)
 
     query.clear()
     query.nameWords = 'python3'
     names = model.query(query) # All
-    check(5, query, names, {'python3'}, 6000)
+    check(5, query, names, {'python3'}, 5_000)
     n = len(names)
 
     query.clear()
@@ -114,13 +116,13 @@ def main():
 
     query.clear()
     query.section = 'math'
-    query.includeLibraries = True
+    query.includeLibs = True
     names = model.query(query)
     check(14, query, names, {'bc', 'dc', 'lp-solve'}, 3)
 
     query.clear()
     query.section = 'python'
-    query.includeLibraries = True
+    query.includeLibs = True
     names = model.query(query)
     check(15, query, names, {'libpython-dev'}, 500)
 
@@ -172,12 +174,12 @@ def main():
     query.nameWords = 'python django'
     query.nameMatch = Model.Match.ANY_WORD
     names = model.query(query) # Any
-    check(23, query, names, minimum=6_000)
+    check(23, query, names, minimum=5_000)
 
     query.clear()
     query.nameWords = 'python django'
     names = model.query(query) # All
-    check(24, query, names, minimum=250)
+    check(24, query, names, minimum=200)
 
     query.clear()
     query.nameWords = 'zzzzzz'
