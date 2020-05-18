@@ -6,6 +6,7 @@ import platform
 import sys
 import textwrap
 
+import regex as re
 import wx
 import wx.adv
 
@@ -108,9 +109,8 @@ License: GPL-3.0.'''
 
 
 def _shortDesc(desc):
-    if len(desc) > Const.MAX_DESC_LEN:
-        i = desc.find('\n')
-        if i > 20:
-            return desc[:i]
-        return textwrap.shorten(desc, Const.MAX_DESC_LEN, placeholder='…')
-    return desc
+    startRx = re.compile(r'(.*?)[.\n]')
+    match = startRx.match(desc)
+    if match is not None and match.end() > Const.MAX_DESC_LEN // 4:
+        return desc[:match.end()].rstrip()
+    return textwrap.shorten(desc, Const.MAX_DESC_LEN, placeholder='…')
