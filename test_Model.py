@@ -202,7 +202,7 @@ def dumpIndexes(model):
             print(name, ', '.join(sorted(words)), file=file)
     with open('stemmeddescs.txt', 'wt', encoding='utf-8') as file:
         for name, words in sorted(
-                model._namesForStemmedDescription.items()):
+                model._namesForStemmedDesc.items()):
             print(name, ', '.join(sorted(words)), file=file)
     with open('sections.txt', 'wt', encoding='utf-8') as file:
         for name, words in sorted(model._namesForSection.items()):

@@ -132,7 +132,7 @@ class Model:
     def _clear(self):
         self._debForName = {} # key = name, value = Deb
         # namesFor*: key = stemmed word, value = set of names
-        self._namesForStemmedDescription = {}
+        self._namesForStemmedDesc = {}
         self._namesForStemmedName = {}
         self._namesForSection = {}
         self.timer = time.monotonic()
@@ -179,28 +179,28 @@ class Model:
 
     def query(self, query):
         haveSection = set()
-        haveDescription = set()
+        haveDesc = set()
         haveName = set()
         constrainToSection = False
-        constrainToDescription = False
+        constrainToDesc = False
         constrainToName = False
         if bool(query.section):
             constrainToSection = True
             haveSection = self._namesForSection.get(query.section)
         if bool(query.descWords):
-            constrainToDescription = True
+            constrainToDesc = True
             words = _stemmedWords(query.descWords)
             for word in words:
-                names = self._namesForStemmedDescription.get(word)
+                names = self._namesForStemmedDesc.get(word)
                 if names is not None:
-                    haveDescription |= set(names)
-            # haveDescription is names matching Any word
+                    haveDesc |= set(names)
+            # haveDesc is names matching Any word
             # Only accept matching All (doesn't apply if only one word)
             if len(words) > 1 and query.descMatch is Match.ALL_WORDS:
                 for word in words:
-                    names = self._namesForStemmedDescription.get(word)
+                    names = self._namesForStemmedDesc.get(word)
                     if names is not None:
-                        haveDescription &= set(names)
+                        haveDesc &= set(names)
         if bool(query.nameWords):
             constrainToName = True
             words = _stemmedWords(query.nameWords)
@@ -218,8 +218,8 @@ class Model:
         names = set(self.allNames)
         if constrainToSection:
             names &= haveSection
-        if constrainToDescription:
-            names &= haveDescription
+        if constrainToDesc:
+            names &= haveDesc
         if constrainToName:
             names &= haveName
         if query.includeLibs and query.includeDocs:
@@ -376,11 +376,9 @@ class Model:
         for name, deb in self._debForName.items():
             for word in _stemmedWords(name):
                 self._namesForStemmedName.setdefault(word, set()).add(name)
-                self._namesForStemmedDescription.setdefault(word,
-                                                            set()).add(name)
+                self._namesForStemmedDesc.setdefault(word, set()).add(name)
             for word in _stemmedWords(deb.desc):
-                self._namesForStemmedDescription.setdefault(word,
-                                                            set()).add(name)
+                self._namesForStemmedDesc.setdefault(word, set()).add(name)
             self._namesForSection.setdefault(deb.section, set()).add(name)
         onReady(f'Read and indexed {size:,d} packages in '
                 f'{time.monotonic() - self.timer:0.1f}sec.', True)
@@ -401,7 +399,7 @@ class Model:
             with open(filename, 'rb') as file:
                 data = pickle.load(file)
             self._debForName = data['debs']
-            self._namesForStemmedDescription = data['descs']
+            self._namesForStemmedDesc = data['descs']
             self._namesForStemmedName = data['names']
             self._namesForSection = data['sects']
             onReady(f'Read {len(self._debForName):,d} packages and indexes '
@@ -414,8 +412,7 @@ class Model:
 
 
     def _saveToCache(self):
-        data = dict(debs=self._debForName,
-                    descs=self._namesForStemmedDescription,
+        data = dict(debs=self._debForName, descs=self._namesForStemmedDesc,
                     names=self._namesForStemmedName,
                     sects=self._namesForSection)
         try:

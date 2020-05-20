@@ -12,6 +12,17 @@ README.md
 
 st.sh
 
-# TODO binary cache or in a std binary format (if faster to save/load & smaller) ?
+# TODO cache or in a std binary format (if faster to save/load & smaller) ?
+# e.g.,
+# file.write('DebFind/cache\n')
+# file.write('DEBS\n')
+# for deb in self.debForName.values():
+#   # write deb in binary 
+# file.write('DESCS\n')
+# for word, names in self.namesForStemmedDesc.items():
+#   file.write(f'\v{word}')
+#   for name in names:
+#	file.write(f'\t{name}')
+# etc.
 
 # vim: syn=yaml
