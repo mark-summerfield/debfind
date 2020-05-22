@@ -227,8 +227,8 @@ class Model:
         filteredNames = set()
         for name in names:
             if (not query.includeLibs and
-                    (('libre' not in name or name.startswith('lib')) and
-                     '-lib' in name)):
+                    (not name.startswith('libre') and
+                        (name.startswith('lib') or '-lib' in name))):
                 continue
             if not query.includeDocs and name.endswith(('-doc', '-docs')):
                 continue
